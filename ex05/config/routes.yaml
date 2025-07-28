@@ -1,0 +1,12 @@
+ex05_index:
+    path: /ex05
+    controller: App\Controller\Ex05Controller::index
+
+ex05_create:
+    path: /ex05/create
+    controller: App\Controller\Ex05Controller::createRandomUsers
+
+ex05_delete:
+    path: /ex05/delete/{id}
+    controller: App\Controller\Ex05Controller::delete
+    methods: [POST]

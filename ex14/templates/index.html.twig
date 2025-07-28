@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ex14 — SQL Injection{% endblock %}
+
+{% block body %}
+    <h1>Ex14 — Démonstration SQL Injection</h1>
+
+    {# Messages d’alerte #}
+    {% for msg in app.flashes('notice') %}
+        <div class="alert">{{ msg }}</div>
+    {% endfor %}
+    {% for msg in app.flashes('error') %}
+        <div class="alert error">{{ msg }}</div>
+    {% endfor %}
+
+    <h2>État de la table</h2>
+    {% if table_status.status == 0 %}
+        <div style="color: green;">Table existe déjà.</div>
+    {% else %}
+        <div style="color: red;">Table absente.</div>
+        <form action="{{ path('ex14_create_table') }}" method="post">
+            <button type="submit">Créer la table</button>
+        </form>
+    {% endif %}
+
+	{% if table_status.status == 0 %}
+		<div style="display: flex; gap: 4em;">
+			<div>
+				<h2>Ajouter un utilisateur (⚠️ Non sécurisé !)</h2>
+				<form id="insecure-form" action="{{ path('ex14_insert') }}" method="post">
+					<label>Username : <input type="text" name="username" required></label><br>
+					<button type="submit">Ajouter (vulnérable)</button>
+				</form>
+			</div>
+			<div>
+				<h2>Ajouter un utilisateur (optionnel, sécurisé)</h2>
+				<form id="secure-form" action="{{ path('ex14_correct_insert') }}" method="post">
+					<label>Username : <input type="text" name="username" required></label><br>
+					<button type="submit">Ajouter (sécurisé)</button>
+				</form>
+			</div>
+		</div>
+	{% endif %}
+
+
+    <h2>Utilisateurs dans la table</h2>
+    <table>
+        <tr><th>ID</th><th>Username</th></tr>
+        {% for row in rows %}
+            <tr>
+                <td>{{ row.id }}</td>
+                <td>{{ row.username }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="3">Aucun utilisateur</td></tr>
+        {% endfor %}
+    </table>
+
+    <script>
+
+		// doInjection(); avec F12 dans la console
+    // Injection SQL auto (pour la démo) : remplir puis envoyer le formulaire avec une injection
+    // À déclencher manuellement dans la console ou en changeant l’id du bouton si tu veux.
+    // Exemple : document.getElementById('insecure-form').username.value = "x'); DROP TABLE users; --";
+    </script>
+{% endblock %}

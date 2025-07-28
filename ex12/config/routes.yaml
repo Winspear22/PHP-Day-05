@@ -1,0 +1,14 @@
+ex12_index:
+    path: /ex12
+    controller: App\Controller\Ex12Controller::index
+    methods: [GET]
+
+ex12_add_test_persons:
+    path: /ex12/add-test-persons
+    controller: App\Controller\Ex12Controller::addTestPersons
+    methods: [POST]
+
+ex12_drop_all:
+    path: /ex12/drop-all
+    controller: App\Controller\Ex12Controller::dropAll
+    methods: [POST]

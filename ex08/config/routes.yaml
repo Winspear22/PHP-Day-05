@@ -1,0 +1,38 @@
+ex08_index:
+    path: /ex08
+    controller: App\Controller\Ex08Controller::index
+
+ex08_create_persons:
+    path: /ex08/create-persons
+    controller: App\Controller\Ex08Controller::createPersonsTable
+    methods: [POST]
+
+ex08_create_address_tables:
+    path: /ex08/create-address-table
+    controller: App\Controller\Ex08Controller::createAddressesTable
+    methods: [POST]
+
+ex08_create_BankAccount_tables:
+    path: /ex08/create-BankAccount-table
+    controller: App\Controller\Ex08Controller::createBankAccountsTable
+    methods: [POST]
+
+ex08_add_marital_status:
+    path: /ex08/add-marital-status
+    controller: App\Controller\Ex08Controller::addMaritalStatusColumn
+    methods: [POST]
+
+ex08_add_relation_addresses:
+    path: /ex08/add-relation-addresses
+    controller: App\Controller\Ex08Controller::addRelationAddresses
+    methods: [POST]
+
+ex08_add_relation_bank_account:
+    path: /ex08/add-relation-bank-account
+    controller: App\Controller\Ex08Controller::addRelationBankAccount
+    methods: [POST]
+
+ex08_drop_tables:
+    path: /ex08/drop-tables
+    controller: App\Controller\Ex08Controller::dropTables
+    methods: [POST]

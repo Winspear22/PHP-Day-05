@@ -1,0 +1,13 @@
+ex07_index:
+    path: /ex07
+    controller: App\Controller\Ex07Controller::index
+
+ex07_create:
+    path: /ex07/create
+    controller: App\Controller\Ex07Controller::createRandomUsers
+
+ex07_update:
+    path: /ex07/update/{id}
+    controller: App\Controller\Ex07Controller::updateUser
+    requirements:
+        id: '\d+'

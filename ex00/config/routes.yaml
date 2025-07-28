@@ -1,0 +1,3 @@
+ex00_index:
+    path: /ex00
+    controller: App\Controller\Ex00Controller::index

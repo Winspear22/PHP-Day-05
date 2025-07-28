@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modifier un utilisateur — Ex07{% endblock %}
+
+{% block body %}
+<h1>Modifier l'utilisateur {{ user.username }}</h1>
+
+{# Messages flash #}
+{% for msg in app.flashes('success') %}
+    <div class="alert">{{ msg }}</div>
+{% endfor %}
+{% for msg in app.flashes('error') %}
+    <div class="alert error">{{ msg }}</div>
+{% endfor %}
+
+{{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button class="btn" type="submit">Enregistrer</button>
+    <a class="btn" href="{{ path('ex07_index') }}">Annuler</a>
+{{ form_end(form) }}
+{% endblock %}

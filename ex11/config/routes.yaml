@@ -1,0 +1,13 @@
+ex11_index:
+    path: /ex11
+    controller: App\Controller\Ex11Controller::index
+
+ex11_add_test_persons:
+    path: /ex11/add-test-persons
+    controller: App\Controller\Ex11Controller::addTestPersons
+    methods: [POST]
+
+ex11_drop_tables:
+    path: /ex11/drop-tables
+    controller: App\Controller\Ex11Controller::dropTables
+    methods: [POST]

@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ex00 — Création de la table User SQL{% endblock %}
+
+{% block body %}
+<h1>Ex00 — Création de la table User (SQL)</h1>
+
+{% for msg in app.flashes('notice') %}
+    <div class="alert">{{ msg }}</div>
+{% endfor %}
+
+<div class="form-wrapper">
+	<form method="post" action="{{ path('ex00_index') }}">
+		<button type="submit">Créer la table user</button>
+	</form>
+</div>
+{% endblock %}

@@ -1,0 +1,331 @@
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f5f6fa;
+    color: #222;
+    margin: 0;
+    padding: 2em;
+}
+
+h1 {
+    color: #2e3a59;
+    font-size: 2.2em;
+    margin-bottom: 0.4em;
+    text-align: center;
+}
+
+h2 {
+    color: #2e3a59;
+    margin-top: 2em;
+    font-size: 1.35em;
+}
+
+.alert {
+    background: #f6e6d9;
+    color: #a05b1b;
+    border-left: 5px solid #e9b97a;
+    padding: 0.6em 1.2em;
+    margin: 0.7em 0;
+    border-radius: 3px;
+    font-size: 1em;
+    box-shadow: 0 1px 4px #0001;
+}
+
+button,
+input[type="submit"] {
+    background: #4557ed;
+    color: #fff;
+    border: none;
+    padding: 0.6em 1.4em;
+    border-radius: 5px;
+    font-size: 1em;
+    margin-right: 1em;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: bold;
+    box-shadow: 0 1px 7px #4557ed11;
+}
+
+button[type="button"] {
+    background: #c7c7c7;
+    color: #2e3a59;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background: #2739b3;
+}
+
+code {
+    background: #ececec;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2em 0 0 0;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px #4557ed13;
+    overflow: hidden;
+}
+
+table th, table td {
+    padding: 0.85em 1em;
+    border-bottom: 1px solid #eaeaea;
+    text-align: left;
+    font-size: 1em;
+}
+
+table th {
+    background: #ecf0fc;
+    color: #2e3a59;
+    font-weight: 600;
+}
+
+table tr:last-child td {
+    border-bottom: none;
+}
+
+.error-container {
+    text-align: center;
+    margin-top: 7vh;
+}
+
+.error-container h1 {
+    font-size: 5em;
+    font-weight: bold;
+    color: #4557ed;
+    margin-bottom: 0.3em;
+    text-shadow: 2px 4px 20px #b1bbff33;
+}
+
+.error-container p {
+    color: #444;
+    font-size: 1.5em;
+    margin-bottom: 2em;
+}
+
+.back-btn {
+    display: inline-block;
+    padding: 0.7em 2em;
+    background: #4557ed;
+    color: #fff;
+    border-radius: 5px;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 1.2em;
+    transition: background 0.2s;
+    box-shadow: 0 1px 10px #4557ed22;
+}
+
+.back-btn:hover {
+    background: #2739b3;
+}
+
+/* ---------- Formulaire moderne, centré, élégant ---------- */
+.form-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2em;
+}
+
+form {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 2px 18px #4557ed14;
+    padding: 2.2em 2em 1.2em 2em;
+    max-width: 420px;
+    min-width: 280px;
+    width: 100%;
+    margin: 2em 0 2.5em 0;
+    border: 1.5px solid #e3eaff;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+form label {
+    font-weight: 600;
+    color: #2e3a59;
+    margin-bottom: 0.2em;
+    margin-left: 0.1em;
+}
+
+form input[type="text"],
+form input[type="email"],
+form input[type="date"],
+form textarea {
+    width: 100%;
+    font-size: 1em;
+    padding: 0.75em 1.1em;
+    border-radius: 7px;
+    border: 1.2px solid #c9c9e9;
+    margin-bottom: 1.1em;
+    background: #f8faff;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    box-shadow: 0 1px 7px #4557ed0d inset;
+}
+
+form input[type="text"]:focus,
+form input[type="email"]:focus,
+form input[type="date"]:focus,
+form textarea:focus {
+    border: 1.5px solid #4557ed;
+    background: #eef0ff;
+    outline: none;
+    box-shadow: 0 0 0 2px #e3eaff;
+}
+
+form textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+form input[type="checkbox"] {
+    transform: scale(1.22);
+    accent-color: #4557ed;
+    margin-right: 0.45em;
+    vertical-align: middle;
+}
+
+form button,
+form input[type="submit"] {
+    margin-top: 0.7em;
+    margin-bottom: 0.7em;
+    width: 100%;
+    padding: 0.85em 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    letter-spacing: 0.01em;
+}
+
+form .form-group {
+    margin-bottom: 1.2em;
+}
+
+form .form-error-message,
+.form-error-message {
+    color: #c80000;
+    background: #ffd1d1;
+    border-left: 5px solid #e66464;
+    padding: 0.4em 0.8em;
+    margin-bottom: 0.8em;
+    border-radius: 3px;
+    font-size: 0.96em;
+}
+
+form div {
+    margin-bottom: 1.1em;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 0.5em;
+    }
+    h1 {
+        font-size: 1.3em;
+    }
+    button,
+    input[type="submit"] {
+        width: 100%;
+        margin-bottom: 0.8em;
+    }
+    .form-wrapper {
+        padding: 0;
+        margin: 0;
+    }
+    form {
+        padding: 1em 0.3em;
+        max-width: 100%;
+        min-width: 0;
+    }
+    table th,
+    table td {
+        padding: 0.65em 0.5em;
+        font-size: 0.92em;
+    }
+}
+
+.form-wrapper form {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 2px 18px #4557ed14;
+    padding: 2.2em 2em 1.2em 2em;
+    max-width: 420px;
+    min-width: 280px;
+    width: 100%;
+    margin: 2em auto 2.5em auto;
+    border: 1.5px solid #e3eaff;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.form-wrapper form label {
+    font-weight: 600;
+    color: #2e3a59;
+    margin-bottom: 0.2em;
+    margin-left: 0.1em;
+}
+
+.form-wrapper form input[type="text"],
+.form-wrapper form input[type="email"],
+.form-wrapper form input[type="date"],
+.form-wrapper form textarea {
+    width: 100%;
+    font-size: 1em;
+    padding: 0.75em 1.1em;
+    border-radius: 7px;
+    border: 1.2px solid #c9c9e9;
+    margin-bottom: 1.1em;
+    background: #f8faff;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    box-shadow: 0 1px 7px #4557ed0d inset;
+}
+
+.form-wrapper form input[type="text"]:focus,
+.form-wrapper form input[type="email"]:focus,
+.form-wrapper form input[type="date"]:focus,
+.form-wrapper form textarea:focus {
+    border: 1.5px solid #4557ed;
+    background: #eef0ff;
+    outline: none;
+    box-shadow: 0 0 0 2px #e3eaff;
+}
+
+.form-wrapper form textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.form-wrapper form input[type="checkbox"] {
+    transform: scale(1.22);
+    accent-color: #4557ed;
+    margin-right: 0.45em;
+    vertical-align: middle;
+}
+
+.form-wrapper form button,
+.form-wrapper form input[type="submit"] {
+    margin-top: 0.7em;
+    margin-bottom: 0.7em;
+    width: 100%;
+    padding: 0.85em 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    letter-spacing: 0.01em;
+}
+
+@media (max-width: 600px) {
+    .form-wrapper form {
+        padding: 1em 0.3em;
+        max-width: 100%;
+        min-width: 0;
+    }
+}

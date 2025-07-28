@@ -1,0 +1,15 @@
+ex10_index:
+    path: /ex10
+    controller: App\Controller\Ex10Controller::index
+
+ex10_create_sql_table:
+    path: /ex10/create-sql-table
+    controller: App\Controller\Ex10Controller::createSqlTable
+
+ex10_import:
+    path: /ex10/import
+    controller: App\Controller\Ex10Controller::importFromFile
+
+ex10_clear:
+    path: /ex10/clear
+    controller: App\Controller\Ex10Controller::clearDatabase

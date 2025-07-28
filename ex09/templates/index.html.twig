@@ -1,0 +1,86 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ex09 — ORM et Relations{% endblock %}
+
+{% block body %}
+<h1>Ex09 — ORM : gestion des personnes et relations</h1>
+
+{# Affichage des messages flash #}
+{% for msg in app.flashes('notice') %}
+    <div class="alert">{{ msg|raw }}</div>
+{% endfor %}
+
+<div style="margin-bottom:2em;">
+    <form action="{{ path('ex09_add') }}" method="post" style="display:inline;">
+        <button type="submit"
+            {% if people|length >= 10 %}disabled style="background:#ccc;color:#666;"{% endif %}>
+            Ajouter une personne
+        </button>
+        {% if people|length >= 10 %}
+            <span style="color:#aaa;margin-left:1em;">(maximum atteint)</span>
+        {% endif %}
+    </form>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Statut marital</th>
+            <th>Date de naissance</th>
+            <th>Adresses</th>
+            <th>Banque</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for person in people %}
+        <tr>
+            <td>{{ person.id }}</td>
+            <td>{{ person.name }}</td>
+            <td>{{ person.email }}</td>
+            <td>{{ person.maritalStatus }}</td>
+            <td>{{ person.birthdate ? person.birthdate|date('Y-m-d') : '-' }}</td>
+            <td>
+                <ul style="margin:0;padding-left:1.1em;">
+                {% for addr in person.addresses %}
+                    <li>
+                        {{ addr.street }}, {{ addr.city }} ({{ addr.country }})
+                    </li>
+                {% endfor %}
+                </ul>
+                {% if person.addresses|length < 3 %}
+                    <form action="{{ path('ex09_add_address', {id: person.id}) }}" method="post" style="display:inline;">
+                        <button type="submit">Ajouter adresse</button>
+                    </form>
+                {% else %}
+                    <span style="color:#aaa;">(3 adresses max)</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if person.bankAccount %}
+                    <strong>{{ person.bankAccount.iban }}</strong>
+                    <br>
+                    <em>{{ person.bankAccount.bankName }}</em>
+                {% else %}
+                    <form action="{{ path('ex09_add_bank_account', {id: person.id}) }}" method="post" style="display:inline;">
+                        <button type="submit">Ajouter un compte</button>
+                    </form>
+                {% endif %}
+            </td>
+            <td>
+                <form action="{{ path('ex09_delete', {id: person.id}) }}" method="post" style="display:inline;" onsubmit="return confirm('Supprimer cette personne ?');">
+                    <button type="submit" style="background:#e3342f;">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="8" style="text-align:center;color:#888;">Aucune personne enregistrée.</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

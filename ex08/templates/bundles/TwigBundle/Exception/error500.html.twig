@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Page non trouvée (404){% endblock %}
+
+{% block body %}
+    <div class="error-container">
+        <h1>Erreur 500</h1>
+        <p>Désolé, une erreur interne du serveur s'est produite !</p>
+        <p>Ceci est un message d'erreur personnalisé.</p>
+        <a class="back-btn" href="{{ path('ex08_index') }}">Revenir à l'accueil</a>
+    </div>
+{% endblock %}

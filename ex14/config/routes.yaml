@@ -1,0 +1,19 @@
+ex14_index:
+    path: /ex14
+    controller: App\Controller\Ex14Controller::index
+    methods: [GET]
+
+ex14_create_table:
+    path: /ex14/create-table
+    controller: App\Controller\Ex14Controller::create_table
+    methods: [POST]
+
+ex14_insert:
+    path: /ex14/insert
+    controller: App\Controller\Ex14Controller::insert
+    methods: [POST]
+
+ex14_correct_insert:
+    path: /ex14/correct-insert
+    controller: App\Controller\Ex14Controller::correctInsert
+    methods: [POST]
