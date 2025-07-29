@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello Ex00Controller!{% endblock %}
+
+{% block body %}
+    <h1>Ex00 - SQL</h1>
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+    <p>Bienvenu sur l'ex00 ! On va créer la table "users" dans la base de données Day_05db !</p>
+    <form method="post" action="{{ path('ex00_create_table') }}">
+        <button type="submit">Créer la table "users"</button>
+    </form>
+{% endblock %}
