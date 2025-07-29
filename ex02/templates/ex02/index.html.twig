@@ -10,10 +10,11 @@
     {% endfor %}
 {% endfor %}
 
-{{ form_start(form) }}
+{{ form_start(form, { 'action': path('ex02_insert_user'), 'method': 'POST' }) }}
     {{ form_widget(form) }}
-        <button type="submit">Insérer</button>
+    <button type="submit">Insérer</button>
 {{ form_end(form) }}
+
 
 <table>
     <thead>

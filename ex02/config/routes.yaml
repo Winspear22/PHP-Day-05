@@ -1,5 +1,14 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute
+ex02_index:
+    path: /ex02
+    controller: App\Controller\Ex02Controller::index
+    methods: [GET]
+
+ex02_insert_user:
+    path: /ex02/insert_user
+    controller: App\Controller\Ex02Controller::insertUser
+    methods: [POST]
+
+ex02_read_user:
+    path: /ex02/read_user
+    controller: App\Controller\Ex02Controller::readUser
+    methods: [GET]

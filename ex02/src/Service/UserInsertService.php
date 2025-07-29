@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use Exception;
+use DateTimeInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
@@ -19,10 +20,12 @@ class UserInsertService
                 'name'      => $data['name'],
                 'email'     => $data['email'],
                 'enable'    => $data['enable'] ? 1 : 0,
-                'birthdate' => $data['birthdate'],
-                'address'   => $data['address'],
+				'birthdate' => $data['birthdate'] instanceof DateTimeInterface
+					? $data['birthdate']->format('Y-m-d H:i:s')
+					: $data['birthdate'],
+			'address'   => $data['address'],
             ]);
-            return "success:OK";
+            return "success:Success! User {$data['username']} has been inserted into the table $tableName.";
         }
         catch (UniqueConstraintViolationException $e)
         {
