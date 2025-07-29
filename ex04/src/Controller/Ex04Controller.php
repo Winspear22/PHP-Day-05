@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use RuntimeException;
 use Doctrine\DBAL\Connection;
 use App\Service\UserReadService;
 use App\Service\UserDeleteService;
@@ -29,20 +30,22 @@ final class Ex04Controller extends AbstractController
     public function index(UserReadService $userReadService, Connection $connection, TableCreatorService $tableCreator): Response
     {
         $form = $this->createUserForm();
-        $tableCreator->createTable($connection, 'users_ex04');
-        /*$result = $tableCreator->createTable($connection, 'users_ex04');
-        if ($result)
+        try
         {
-            [$type, $msg] = explode(':', $result, 2);
-            $this->addFlash($type, $msg);
-        }*/
-        $users = $userReadService->getAllUsers($connection, 'users_ex04');
-
+            $tableCreator->createTable($connection, 'users_ex04');
+            $users = $userReadService->getAllUsers($connection, 'users_ex04');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', "Database error: " . $e->getMessage());
+            $users = [];
+        }
         return $this->render('ex04/index.html.twig', [
             'form' => $form->createView(),
             'users' => $users
         ]);
     }
+
 
     /**
      * @Route("/ex04/insert_user", name="ex04_insert_user", methods={"POST"})
