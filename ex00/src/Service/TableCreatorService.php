@@ -4,7 +4,7 @@ namespace App\Service;
 
 use Doctrine\DBAL\Connection;
 
-class TableCreator
+class TableCreatorService
 {
     public function createTable(Connection $connection, string $tableName): string
     {

@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Service\TableCreator;
+use App\Service\TableCreatorService;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -24,7 +24,7 @@ final class Ex00Controller extends AbstractController
     /**
      * @Route("/ex00/create_table", name="ex00_create_table")
      */
-    public function createTable(TableCreator $tableCreator, Connection $connection): Response
+    public function createTable(TableCreatorService $tableCreator, Connection $connection): Response
     {
         $result = $tableCreator->createTable($connection, 'users');
         [$type, $msg] = explode(':', $result, 2);

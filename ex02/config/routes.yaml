@@ -1,3 +1,5 @@
-ex02_index:
-    path: /ex02
-    controller: App\Controller\Ex02Controller::index
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
