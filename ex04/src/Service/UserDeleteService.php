@@ -15,7 +15,7 @@ class UserDeleteService
 			if (!$exists)
 				return "danger:User $id does not exist.";
             $connection->executeStatement("DELETE FROM $tableName WHERE id = :id", ['id' => $id]);
-            return "success:User $id deleted.";
+            return "success:Success! User $id deleted.";
         }
         catch (Exception $e)
         {

@@ -66,7 +66,7 @@ final class Ex04Controller extends AbstractController
         {
             $this->addFlash('danger', 'Error, invalid form!');
         }
-        return $this->redirectToRoute('ex02_index');
+        return $this->redirectToRoute('ex04_index');
     }
 
     /**
@@ -78,7 +78,7 @@ final class Ex04Controller extends AbstractController
         {
             $users = $userReadService->getAllUsers($connection, 'users_ex04');
         }
-        catch (\RuntimeException $e)
+        catch (RuntimeException $e)
         {
             $this->addFlash('danger', $e->getMessage());
             $users = [];
@@ -90,7 +90,7 @@ final class Ex04Controller extends AbstractController
     /**
      * @Route("/ex04/delete_user/{id}", name="ex04_delete_user", methods={"POST"})
      */
-    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id): Response
+    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id)//: Response
     {
         $result = $userDeleteService->deleteUser($connection, 'users_ex04', $id);
         [$type, $msg] = explode(':', $result, 2);

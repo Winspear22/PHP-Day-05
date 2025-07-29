@@ -40,7 +40,7 @@
                 <td>{{ user.birthdate|date('Y-m-d') }}</td>
                 <td>{{ user.address }}</td>
                 <td>
-                    <form method="post" action="{{ path('ex04_delete', {'id': user.id}) }}" style="display:inline;">
+                    <form method="post" action="{{ path('ex04_delete_user', {'id': user.id}) }}" style="display:inline;">
                         <button type="submit" onclick="return confirm('Delete user #{{ user.id }}?')">Delete</button>
                     </form>
                 </td>

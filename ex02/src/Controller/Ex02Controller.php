@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use RuntimeException;
 use Doctrine\DBAL\Connection;
 use App\Service\UserReadService;
 use App\Service\UserInsertService;
@@ -28,15 +29,22 @@ final class Ex02Controller extends AbstractController
     public function index(UserReadService $userReadService, Connection $connection, TableCreatorService $tableCreator): Response
     {
         $form = $this->createUserForm();
-        $tableCreator->createTable($connection, 'users_ex02');
-        /*$result = $tableCreator->createTable($connection, 'users_ex02');
-        if ($result)
+        try
         {
-            [$type, $msg] = explode(':', $result, 2);
-            $this->addFlash($type, $msg);
-        }*/
-        $users = $userReadService->getAllUsers($connection, 'users_ex02');
-
+            $tableCreator->createTable($connection, 'users_ex02');
+            /*$result = $tableCreator->createTable($connection, 'users_ex02');
+            if ($result)
+            {
+                [$type, $msg] = explode(':', $result, 2);
+                $this->addFlash($type, $msg);
+            }*/
+            $users = $userReadService->getAllUsers($connection, 'users_ex02');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', "Database error: " . $e->getMessage());
+            $users = [];
+        }
         return $this->render('ex02/index.html.twig', [
             'form' => $form->createView(),
             'users' => $users
