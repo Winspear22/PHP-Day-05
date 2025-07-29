@@ -1,5 +1,19 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute
+ex04_index:
+    path: /ex04
+    controller: App\Controller\Ex04Controller::index
+    methods: [GET]
+
+ex04_insert_user:
+    path: /ex04/insert_user
+    controller: App\Controller\Ex04Controller::insertUser
+    methods: [POST]
+
+ex04_read_user:
+    path: /ex04/read_user
+    controller: App\Controller\Ex04Controller::readUser
+    methods: [GET]
+
+ex04_delete_user:
+    path: /ex04/delete/{id}
+    controller: App\Controller\Ex04Controller::deleteUser
+    methods: [POST]

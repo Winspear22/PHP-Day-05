@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use Doctrine\DBAL\Connection;
 use App\Service\UserReadService;
+use App\Service\UserDeleteService;
 use App\Service\UserInsertService;
 use App\Service\TableCreatorService;
 use Symfony\Component\HttpFoundation\Request;
@@ -83,6 +84,17 @@ final class Ex04Controller extends AbstractController
             'users' => $users
         ]);
     }
+    /**
+     * @Route("/ex04/delete_user/{id}", name="ex04_delete_user", methods={"POST"})
+     */
+    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id): Response
+    {
+        $result = $userDeleteService->deleteUser($connection, 'users_ex04', $id);
+        [$type, $msg] = explode(':', $result, 2);
+        $this->addFlash($type, $msg);
+        return $this->redirectToRoute('ex04_index');
+    }
+
     private function createUserForm()
     {
         return $this->createFormBuilder()
