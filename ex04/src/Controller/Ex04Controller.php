@@ -3,202 +3,137 @@
 namespace App\Controller;
 
 use Doctrine\DBAL\Connection;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Service\UserReadService;
+use App\Service\UserInsertService;
+use App\Service\TableCreatorService;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Validator\Constraints\LessThanOrEqual;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-class Ex04Controller extends AbstractController
+final class Ex04Controller extends AbstractController
 {
-
-    const SUCCESS = 0;
-	const FAILURE = 1;
-	const DOES_NOT_EXIST = 2;
     /**
      * @Route("/ex04", name="ex04_index")
      */
-	public function index(Connection $connection): Response
-	{
-		$tableName = "users";
-		try 
-		{
-			$tableStatus = $this->tableExistenceCheck($tableName, $connection);
-			if ($tableStatus['status'] === self::DOES_NOT_EXIST) 
-			{
-				$this->addFlash('notice', $tableStatus['message']);
-				$creationResult = $this->createTable($tableName, $connection);
-				$this->addFlash('notice', $creationResult['message']);
-				$genMessages = $this->generateUsers($connection, $tableName, 10);            
-				foreach ($genMessages as $msg) 
-					$this->addFlash('notice', $msg['message']);
-			}
-			$users = $this->getAllUsers($connection, $tableName);
-		} 
-		catch (\Exception $e) 
-		{
-			$this->addFlash('error', "Erreur globale : " . $e->getMessage());
-			$users = [];
-		}
-			return $this->render('index.html.twig', [
-			'users' => $users,
-			]);
-	}
-
-	private function generateUsers(Connection $connection, string $tableName, int $nb): array
-	{
-		$messages = [];
-		try 
-		{
-			$connection->executeStatement("DELETE FROM `$tableName`");
-		} 
-		catch (\Exception $e) 
-		{
-			$messages[] = ['status' => self::FAILURE, 'message' => "Erreur lors du nettoyage : " . $e->getMessage()];
-			return $messages;
-		}        
-		for ($i = 0; $i <= $nb; $i++) 
-		{
-			$data = [
-				'username'  => 'user'.$i,
-				'name'      => 'Nom'.$i,
-				'email'     => 'user'.$i.'@mail.com',
-				'enable'    => rand(0,1),
-				'birthdate' => date('Y-m-d H:i:s', strtotime('-'.rand(18,40).' years')),
-				'address'   => 'Adresse '.$i.' avenue Testville'
-			];
-			try 
-			{
-				$sql = "INSERT INTO `$tableName` (username, name, email, enable, birthdate, address)
-						VALUES (:username, :name, :email, :enable, :birthdate, :address)";
-				$connection->executeStatement($sql, $data);
-			} 
-			catch (\Exception $e) 
-			{
-				$messages[] = ['status' => self::FAILURE, 'message' => "Erreur personne $i : " . $e->getMessage()];
-			}
-		}
-		$messages[] = ['status' => self::SUCCESS, 'message' => "10 users créés avec succès."];
-		return $messages;
-	}
-
-	private function createTable(string $tableName, Connection $connection): array
+    public function index(UserReadService $userReadService, Connection $connection, TableCreatorService $tableCreator): Response
     {
-        try 
+        $form = $this->createUserForm();
+        $tableCreator->createTable($connection, 'users_ex04');
+        /*$result = $tableCreator->createTable($connection, 'users_ex04');
+        if ($result)
         {
-            $sql = "CREATE TABLE IF NOT EXISTS `$tableName` (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) UNIQUE,
-                name VARCHAR(255),
-                email VARCHAR(255) UNIQUE,
-                enable BOOLEAN,
-                birthdate DATETIME,
-                address LONGTEXT
-            ) ENGINE=InnoDB;";
-            $connection->executeStatement($sql);
-            return ['status' => self::SUCCESS, 'message' => "La table '$tableName' a été créée avec succès."];
-        } 
-        catch (\Exception $e) 
-        {
-            return ['status' => self::FAILURE, 'message' => "Erreur lors de la création de la table '$tableName' : " . $e->getMessage()];
-        }
+            [$type, $msg] = explode(':', $result, 2);
+            $this->addFlash($type, $msg);
+        }*/
+        $users = $userReadService->getAllUsers($connection, 'users_ex04');
+
+        return $this->render('ex04/index.html.twig', [
+            'form' => $form->createView(),
+            'users' => $users
+        ]);
     }
 
     /**
-     * @Route("/ex04/fill", name="ex04_fill", methods={"POST"})
+     * @Route("/ex04/insert_user", name="ex04_insert_user", methods={"POST"})
      */
-	public function fillTable(Connection $connection)
-	{
-		$tableName = "users";
-		try 
-		{
-			$tableStatus = $this->tableExistenceCheck($tableName, $connection);
-			if ($tableStatus['status'] === self::DOES_NOT_EXIST) 
-			{
-				$this->addFlash('notice', $tableStatus['message']);
-				return $this->redirectToRoute('ex04_index');
-			}
-			$messages = $this->generateUsers($connection, $tableName, 10);
-			foreach ($messages as $msg) 
-				$this->addFlash('notice', $msg['message']);
-		} 
-		catch (\Exception $e) 
-		{
-			$this->addFlash('error', "Erreur lors du remplissage : " . $e->getMessage());
-		}
-		return $this->redirectToRoute('ex04_index');
-	}
-	private function tableExistenceCheck(string $tableName, Connection $connection): array
+    public function insertUser(Request $request, UserInsertService $userInsertService, Connection $connection): Response
     {
-        try 
-        {
-            $doesTableExists = $connection->executeQuery("SHOW TABLES LIKE '$tableName'")->rowCount();
-            if ($doesTableExists > 0)
-                return ['status' => self::SUCCESS, 'message' => "La table $tableName existe déjà."];
-            return ['status' => self::DOES_NOT_EXIST, 'message' => "La table $tableName n'existe pas... "];
-        }
-        catch (\Exception $e) 
-        {
-            return ['status' => self::FAILURE, 'message' => "Erreur lors de la RECHERCHE de la table '$tableName' : " . $e->getMessage()];
-        }
-    }
-	
-	/*========================================================================================*/
-	/*--------------------------------------- GETTER -----------------------------------------*/
-	/*========================================================================================*/
-	
-	private function getAllUsers(Connection $connection, string $tableName): array
-	{
-		try 
-		{
-			$sql = "SELECT * FROM `$tableName` ORDER BY id ASC";
-			return $connection->fetchAllAssociative($sql);
-		} 
-		catch (\Exception $e) 
-		{
-			return [];
-		}
-	}
-    private function getPersonById(Connection $connection, string $tableName, int $id): ?array
-    {
-        try 
-        {
-            $sql = "SELECT * FROM `$tableName` WHERE id = :id";
-            $person = $connection->fetchAssociative($sql, ['id' => $id]);
-            return $person ?: null;
-        } 
-        catch (\Exception $e) 
-        {
-            return null;
-        }
-    }
+        $form = $this->createUserForm();
+        $form->handleRequest($request);
 
-	/*========================================================================================*/
-	/*--------------------------------------- DELETE -----------------------------------------*/
-	/*========================================================================================*/
+        if ($form->isSubmitted() && $form->isValid())
+        {
+            $data = $form->getData();
+            $result = $userInsertService->insertUser($connection, 'users_ex04', $data);
+            [$type, $msg] = explode(':', $result, 2);
+            $this->addFlash($type, $msg);
+        }
+        else
+        {
+            $this->addFlash('danger', 'Error, invalid form!');
+        }
+        return $this->redirectToRoute('ex02_index');
+    }
 
     /**
-     * @Route("/ex04/delete/{id}", name="ex04_delete", methods={"POST"})
+     * @Route("/ex04/read_user", name="ex04_read_user", methods={"GET"})
      */
-	public function delete(Connection $connection, Request $request, $id)
-	{
-		$tableName = "users";
-		try 
-		{
-			$person = $this->getPersonById($connection, $tableName, (int)$id);
-			if (!$person) 
-			{
-				$this->addFlash('notice', "Impossible de supprimer : le user (ID $id) n'existe pas.");
-				return $this->redirectToRoute('ex04_index');
-			}
-			$sql = "DELETE FROM `$tableName` WHERE id = :id";
-			$connection->executeStatement($sql, ['id' => $id]);
-			$this->addFlash('success', "Suppression réussie pour le user ID $id !");
-		} 
-		catch (\Exception $e) 
-		{
-			$this->addFlash('error', "Erreur lors de la suppression ou du check : " . $e->getMessage());
-		}
-		$this->addFlash('notice', "Suppression effectuée avec succès.");
-		return $this->redirectToRoute('ex04_index');
-	}
+    public function readUser(Connection $connection, UserReadService $userReadService): Response
+    {
+        try
+        {
+            $users = $userReadService->getAllUsers($connection, 'users_ex04');
+        }
+        catch (\RuntimeException $e)
+        {
+            $this->addFlash('danger', $e->getMessage());
+            $users = [];
+        }
+        return $this->render('ex04/index.html.twig', [
+            'users' => $users
+        ]);
+    }
+    private function createUserForm()
+    {
+        return $this->createFormBuilder()
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address']
+            ])
+            ->getForm();
+    }
+
 }

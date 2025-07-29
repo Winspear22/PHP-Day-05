@@ -1,13 +1,5 @@
-ex04_index:
-    path: /ex04
-    controller: App\Controller\Ex04Controller::index
-
-ex04_delete:
-    path: /ex04/delete/{id}
-    controller: App\Controller\Ex04Controller::delete
-    methods: [POST]
-
-ex04_fill:
-    path: /ex04/fill
-    controller: App\Controller\Ex04Controller::fillTable
-    methods: [POST]
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
