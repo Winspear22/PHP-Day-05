@@ -145,8 +145,12 @@ final class Ex04Controller extends AbstractController
                 'label' => 'Address',
                 'constraints' => [
                     new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                ]),
                 ],
-                'attr' => ['rows' => 3, 'placeholder' => 'Your full address']
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
             ])
             ->getForm();
     }
