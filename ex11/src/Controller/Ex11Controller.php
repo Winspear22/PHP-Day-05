@@ -6,13 +6,15 @@ use Throwable;
 use RuntimeException;
 use Doctrine\DBAL\Connection;
 use App\Service\TablesFillService;
+use App\Service\ValidationService;
 use App\Service\PersonsReadService;
 use App\Service\TablesAlterService;
 use App\Service\TablesCreatorService;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 
 final class Ex11Controller extends AbstractController
 {
@@ -21,19 +23,22 @@ final class Ex11Controller extends AbstractController
      */
     public function index(
         PersonsReadService $personsReadService,
-        Connection $connection, Request $request
+        Connection $connection, Request $request, ValidationService $validationService
     ): Response
     {
+        $params = $validationService->validateQueryParams($request);
+        extract($params); // $filter_name, $sort_by, $sort_dir, $limit, $flash_messages
+
+        // Ajoute tous les messages flash retournés
+        foreach ($params['messages'] as [$type, $msg])
+            $this->addFlash($type, $msg);
         try
         {
-            $filterName = $request->query->get('filter_name', '');
-            $sortBy = $request->query->get('sort_by', 'name');
-            $sortDir = $request->query->get('sort_dir', 'asc');
-            $data = $personsReadService->getPersonsGrouped($connection, $filterName, $sortBy, $sortDir);
+            $data = $personsReadService->getPersonsGrouped($connection, $filter_name, $sort_by, $sort_dir);
         }
         catch (RuntimeException $e)
         {
-            $this->addFlash('danger', $e->getMessage());
+            $this->addFlash('danger', 'Error, in the index : ' . $e->getMessage());
             $data = [];
         }
         catch (Throwable $e)
@@ -41,11 +46,12 @@ final class Ex11Controller extends AbstractController
             $this->addFlash('danger', 'Error, unexpected error while reading persons: ' . $e->getMessage());
             $data = [];
         }
+
         return $this->render('ex11/index.html.twig', [
             'data'        => $data,
-            'filter_name' => $filterName,
-            'sort_by'     => $sortBy,
-            'sort_dir'    => $sortDir,
+            'filter_name' => $filter_name,
+            'sort_by'     => $sort_by,
+            'sort_dir'    => $sort_dir,
         ]);
     }
 
