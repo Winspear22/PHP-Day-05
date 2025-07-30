@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use Exception;
+use Throwable;
 use Doctrine\DBAL\Connection;
 
 class TablesCreatorService
@@ -24,7 +24,7 @@ class TablesCreatorService
 			$connection->executeStatement($sql);
             return "success:Success! The table $tableName was created!";
 		}
-		catch (Exception $e)
+		catch (Throwable $e)
 		{
 			return "danger:Error, there was a problem in the table $tableName creation : " . $e->getMessage();
 		}
@@ -46,7 +46,7 @@ class TablesCreatorService
 			$connection->executeStatement($sql);
             return "success:Success! The table $tableName was created!";
 		}
-		catch (Exception $e)
+		catch (Throwable $e)
 		{
 			return "danger:Error, there was a problem in the table $tableName creation : " . $e->getMessage();
 		}
@@ -67,7 +67,7 @@ class TablesCreatorService
 			$connection->executeStatement($sql);
             return "success:Success! The table $tableName was created!";
 		}
-		catch (Exception $e)
+		catch (Throwable $e)
 		{
 			return "danger:Error, there was a problem in the table $tableName creation : " . $e->getMessage();
 		}
@@ -80,7 +80,7 @@ class TablesCreatorService
             $result = $connection->fetchOne("SHOW TABLES LIKE '$tableName'");
             return ($result !== false);
         }
-        catch (Exception $e)
+        catch (Throwable $e)
         {
             return false;
         }
