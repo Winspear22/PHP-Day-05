@@ -3,22 +3,50 @@
 namespace App\Controller;
 
 use Throwable;
+use RuntimeException;
 use Doctrine\DBAL\Connection;
 use App\Service\TablesFillService;
+use App\Service\PersonsReadService;
 use App\Service\TablesAlterService;
 use App\Service\TablesCreatorService;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 
 final class Ex11Controller extends AbstractController
 {
     /**
      * @Route("/ex11", name="ex11_index")
      */
-    public function index(): Response
-    {  
-        return $this->render('ex11/index.html.twig');
+    public function index(
+        PersonsReadService $personsReadService,
+        Connection $connection, Request $request
+    ): Response
+    {
+        try
+        {
+            $filterName = $request->query->get('filter_name', '');
+            $sortBy = $request->query->get('sort_by', 'name');
+            $sortDir = $request->query->get('sort_dir', 'asc');
+            $data = $personsReadService->getPersonsGrouped($connection, $filterName, $sortBy, $sortDir);
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', $e->getMessage());
+            $data = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error, unexpected error while reading persons: ' . $e->getMessage());
+            $data = [];
+        }
+        return $this->render('ex11/index.html.twig', [
+            'data'        => $data,
+            'filter_name' => $filterName,
+            'sort_by'     => $sortBy,
+            'sort_dir'    => $sortDir,
+        ]);
     }
 
     /**
