@@ -17,3 +17,5 @@ ex04_delete_user:
     path: /ex04/delete_user/{id}
     controller: App\Controller\Ex04Controller::deleteUser
     methods: [POST]
+    requirements:
+        id: '\d+'

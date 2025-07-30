@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use Throwable;
 use RuntimeException;
 use Doctrine\DBAL\Connection;
 use App\Service\UserReadService;
@@ -40,6 +41,11 @@ final class Ex04Controller extends AbstractController
             $this->addFlash('danger', "Database error: " . $e->getMessage());
             $users = [];
         }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Error, unexpected error: " . $e->getMessage());
+            $users = [];
+        }
         return $this->render('ex04/index.html.twig', [
             'form' => $form->createView(),
             'users' => $users
@@ -52,21 +58,30 @@ final class Ex04Controller extends AbstractController
      */
     public function insertUser(Request $request, UserInsertService $userInsertService, Connection $connection): Response
     {
-        $form = $this->createUserForm();
-        $form->handleRequest($request);
+        try
+        {
+            $form = $this->createUserForm();
+            $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid())
-        {
-            $data = $form->getData();
-            $result = $userInsertService->insertUser($connection, 'users_ex04', $data);
-            [$type, $msg] = explode(':', $result, 2);
-            $this->addFlash($type, $msg);
+            if ($form->isSubmitted() && $form->isValid())
+            {
+                $data = $form->getData();
+                $result = $userInsertService->insertUser($connection, 'users_ex04', $data);
+                [$type, $msg] = explode(':', $result, 2);
+                $this->addFlash($type, $msg);
+                return $this->redirectToRoute('ex04_index');
+            }
+            else
+            {
+                $this->addFlash('danger', 'Error, invalid form!');
+                return $this->redirectToRoute('ex04_index');
+            }
         }
-        else
+        catch (Throwable $e)
         {
-            $this->addFlash('danger', 'Error, invalid form!');
+            $this->addFlash('danger', 'Error, unexpected error while inserting user: ' . $e->getMessage());
+            return $this->redirectToRoute('ex04_index');
         }
-        return $this->redirectToRoute('ex04_index');
     }
 
     /**
@@ -83,19 +98,34 @@ final class Ex04Controller extends AbstractController
             $this->addFlash('danger', $e->getMessage());
             $users = [];
         }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error, unexpected error while reading users: ' . $e->getMessage());
+            $users = [];
+        }
         return $this->render('ex04/index.html.twig', [
             'users' => $users
         ]);
     }
+
     /**
      * @Route("/ex04/delete_user/{id}", name="ex04_delete_user", methods={"POST"})
      */
-    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id)//: Response
+    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id): Response
     {
-        $result = $userDeleteService->deleteUser($connection, 'users_ex04', $id);
-        [$type, $msg] = explode(':', $result, 2);
-        $this->addFlash($type, $msg);
-        return $this->redirectToRoute('ex04_index');
+        try
+        {
+            $result = $userDeleteService->deleteUser($connection, 'users_ex04', $id);
+            [$type, $msg] = explode(':', $result, 2);
+            $this->addFlash($type, $msg);
+            return $this->redirectToRoute('ex04_index');
+
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Unexpected error while deleting user: " . $e->getMessage());
+            return $this->redirectToRoute('ex04_index');
+        }
     }
 
     private function createUserForm()

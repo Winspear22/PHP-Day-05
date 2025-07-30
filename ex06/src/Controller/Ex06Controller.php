@@ -41,7 +41,12 @@ final class Ex06Controller extends AbstractController
         }
         catch (RuntimeException $e)
         {
-            $this->addFlash('danger', "Database error: " . $e->getMessage());
+            $this->addFlash('danger', "Error, database error: " . $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Error, unexpected error: " . $e->getMessage());
             $users = [];
         }
         return $this->render('ex06/index.html.twig', [
@@ -77,7 +82,7 @@ final class Ex06Controller extends AbstractController
         }
         catch (Throwable $e)
         {
-            $this->addFlash('danger', 'Unexpected error while inserting user: ' . $e->getMessage());
+            $this->addFlash('danger', 'Error, unexpected error while inserting user: ' . $e->getMessage());
             return $this->redirectToRoute('ex06_index');
         }
     }
@@ -98,7 +103,7 @@ final class Ex06Controller extends AbstractController
         }
         catch (Throwable $e)
         {
-            $this->addFlash('danger', 'Unexpected error while reading users: ' . $e->getMessage());
+            $this->addFlash('danger', 'Error, unexpected error while reading users: ' . $e->getMessage());
             $users = [];
         }
         return $this->render('ex06/index.html.twig', [

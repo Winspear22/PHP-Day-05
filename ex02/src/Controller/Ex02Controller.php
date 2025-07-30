@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use Throwable;
 use RuntimeException;
 use Doctrine\DBAL\Connection;
 use App\Service\UserReadService;
@@ -42,7 +43,12 @@ final class Ex02Controller extends AbstractController
         }
         catch (RuntimeException $e)
         {
-            $this->addFlash('danger', "Database error: " . $e->getMessage());
+            $this->addFlash('danger', "Error, database error: " . $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Error, unexpected error: " . $e->getMessage());
             $users = [];
         }
         return $this->render('ex02/index.html.twig', [
@@ -56,21 +62,30 @@ final class Ex02Controller extends AbstractController
      */
     public function insertUser(Request $request, UserInsertService $userInsertService, Connection $connection): Response
     {
-        $form = $this->createUserForm();
-        $form->handleRequest($request);
+        try
+        {
+            $form = $this->createUserForm();
+            $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid())
-        {
-            $data = $form->getData();
-            $result = $userInsertService->insertUser($connection, 'users_ex02', $data);
-            [$type, $msg] = explode(':', $result, 2);
-            $this->addFlash($type, $msg);
+            if ($form->isSubmitted() && $form->isValid())
+            {
+                $data = $form->getData();
+                $result = $userInsertService->insertUser($connection, 'users_ex02', $data);
+                [$type, $msg] = explode(':', $result, 2);
+                $this->addFlash($type, $msg);
+                return $this->redirectToRoute('ex02_index');
+            }
+            else
+            {
+                $this->addFlash('danger', 'Error, invalid form!');
+                return $this->redirectToRoute('ex02_index');
+            }
         }
-        else
+        catch (Throwable $e)
         {
-            $this->addFlash('danger', 'Error, invalid form!');
+            $this->addFlash('danger', 'Error, unexpected error while inserting user: ' . $e->getMessage());
+            return $this->redirectToRoute('ex02_index');
         }
-        return $this->redirectToRoute('ex02_index');
     }
 
     /**
@@ -82,9 +97,14 @@ final class Ex02Controller extends AbstractController
         {
             $users = $userReadService->getAllUsers($connection, 'users_ex02');
         }
-        catch (\RuntimeException $e)
+        catch (RuntimeException $e)
         {
             $this->addFlash('danger', $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error, unexpected error while reading users: ' . $e->getMessage());
             $users = [];
         }
         return $this->render('ex02/index.html.twig', [
