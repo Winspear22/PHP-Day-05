@@ -12,6 +12,8 @@ class TablesAlterService
         $sql = "ALTER TABLE $tableName ADD COLUMN marital_status ENUM('single', 'married', 'widower') DEFAULT 'single'";
         try
         {
+			if (!$this->checkTableExistence($connection, $tableName))
+				return "danger: Error, the table $tableName does not exist.";
             // Vérifie si la colonne existe déjà pour éviter les erreurs
 			if ($this->doesColumnExist($connection, $tableName, 'marital_status'))
 				return "info:The column marital_status already exists in table $tableName.";
@@ -28,17 +30,25 @@ class TablesAlterService
 	{
 		try
 		{
-			// Vérifie d'abord si la colonne person_id existe dans bank_accounts
+			// 1. Vérifier existence des deux tables
+			if (!$this->checkTableExistence($connection, 'bank_accounts'))
+				return "danger: Error, the table bank_accounts does not exist.";
+			if (!$this->checkTableExistence($connection, 'persons'))
+				return "danger: Error, the table persons does not exist.";
+
+			// 2. Vérifier colonne person_id
 			if (!$this->doesColumnExist($connection, 'bank_accounts', 'person_id'))
-				return "danger:The column person_id does not exist in table bank_accounts.";
-			// Vérifie si la contrainte existe déjà (protection supplémentaire)
+				return "danger: Error, the column person_id does not exist in table bank_accounts.";
+
+			// 3. Vérifier si la contrainte existe déjà
 			$constraints = $connection->fetchAllAssociative(
 				"SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE 
 				WHERE TABLE_NAME = 'bank_accounts' AND COLUMN_NAME = 'person_id' AND REFERENCED_TABLE_NAME = 'persons'"
 			);
 			if (!empty($constraints))
 				return "info:The relation between bank_accounts and persons already exists.";
-			// Ajoute la contrainte de clé étrangère
+
+			// 4. Ajoute la contrainte de clé étrangère
 			$sql = "ALTER TABLE bank_accounts 
 					ADD CONSTRAINT fk_bank_person FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE";
 			$connection->executeStatement($sql);
@@ -54,17 +64,25 @@ class TablesAlterService
 	{
 		try
 		{
-			// Vérifie si la colonne person_id existe dans addresses
+			// 1. Vérifier existence des deux tables
+			if (!$this->checkTableExistence($connection, 'addresses'))
+				return "danger: Error, the table addresses does not exist.";
+			if (!$this->checkTableExistence($connection, 'persons'))
+				return "danger: Error, the table persons does not exist.";
+
+			// 2. Vérifier colonne person_id
 			if (!$this->doesColumnExist($connection, 'addresses', 'person_id'))
-				return "danger:The column person_id does not exist in table addresses.";
-			// Vérifie si la contrainte existe déjà
+				return "danger: Error, the column person_id does not exist in table addresses.";
+
+			// 3. Vérifier si la contrainte existe déjà
 			$constraints = $connection->fetchAllAssociative(
 				"SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE 
 				WHERE TABLE_NAME = 'addresses' AND COLUMN_NAME = 'person_id' AND REFERENCED_TABLE_NAME = 'persons'"
 			);
 			if (!empty($constraints))
 				return "info:The relation between addresses and persons already exists.";
-			// Ajoute la contrainte de clé étrangère
+
+			// 4. Ajoute la contrainte de clé étrangère
 			$sql = "ALTER TABLE addresses 
 					ADD CONSTRAINT fk_address_person FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE";
 			$connection->executeStatement($sql);
@@ -88,5 +106,18 @@ class TablesAlterService
 			return false;
 		}
 	}
+
+	private function checkTableExistence(Connection $connection, string $tableName): bool
+    {
+        try
+        {
+            $result = $connection->fetchOne("SHOW TABLES LIKE '$tableName'");
+            return ($result !== false);
+        }
+        catch (Throwable $e)
+        {
+            return false;
+        }
+    }
 }
 ?>

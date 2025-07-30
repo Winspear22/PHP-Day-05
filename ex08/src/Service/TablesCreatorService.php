@@ -36,8 +36,7 @@ class TablesCreatorService
             id INT AUTO_INCREMENT PRIMARY KEY,
             iban VARCHAR(34) NOT NULL,
             bank_name VARCHAR(50) NOT NULL,
-            person_id INT UNIQUE,
-            CONSTRAINT fk_bank_person FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
+            person_id INT UNIQUE
         )";
 		try
 		{
@@ -57,8 +56,7 @@ class TablesCreatorService
         $sql = "CREATE TABLE IF NOT EXISTS $tableName (
             id INT AUTO_INCREMENT PRIMARY KEY,
             address LONGTEXT NOT NULL,
-            person_id INT NOT NULL,
-            CONSTRAINT fk_address_person FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
+            person_id INT NOT NULL
         )";
 		try
 		{

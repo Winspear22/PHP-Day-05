@@ -1,5 +1,34 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute
+ex08_index:
+    path: /ex08
+    controller: App\Controller\Ex08Controller::index
+    methods: [GET]
+
+ex08_create_persons:
+    path: /ex08/create_persons
+    controller: App\Controller\Ex08Controller::createPersonsTable
+    methods: [POST]
+
+ex08_create_bank_accounts:
+    path: /ex08/create_bank_accounts
+    controller: App\Controller\Ex08Controller::createBankAccountsTable
+    methods: [POST]
+
+ex08_create_addresses:
+    path: /ex08/create_addresses
+    controller: App\Controller\Ex08Controller::createAddressesTable
+    methods: [POST]
+
+ex08_add_marital_status:
+    path: /ex08/add_marital_status
+    controller: App\Controller\Ex08Controller::addMaritalStatusToPersons
+    methods: [POST]
+
+ex08_relation_bank_account:
+    path: /ex08/relation_bank_account
+    controller: App\Controller\Ex08Controller::createBankAccountRelation
+    methods: [POST]
+
+ex08_relation_address:
+    path: /ex08/relation_address
+    controller: App\Controller\Ex08Controller::createAddressRelation
+    methods: [POST]

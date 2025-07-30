@@ -1,20 +1,50 @@
+{# templates/ex08/index.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello Ex08Controller!{% endblock %}
+{% block title %}Ex08 - SQL Advanced (Relations){% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <h1>Ex08 - SQL : Relations & Altérations de tables</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    {# Messages flash #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/home/adnen/Desktop/Day-05/ex08/src/Controller/Ex08Controller.php</code></li>
-        <li>Your template at <code>/home/adnen/Desktop/Day-05/ex08/templates/ex08/index.html.twig</code></li>
-    </ul>
-</div>
+    <div class="actions">
+        <form method="post" action="{{ path('ex08_create_persons') }}" style="display:inline;">
+            <button type="submit">Créer la table <b>persons</b></button>
+        </form>
+
+        <form method="post" action="{{ path('ex08_create_bank_accounts') }}" style="display:inline;">
+            <button type="submit">Créer la table <b>bank_accounts</b></button>
+        </form>
+
+        <form method="post" action="{{ path('ex08_create_addresses') }}" style="display:inline;">
+            <button type="submit">Créer la table <b>addresses</b></button>
+        </form>
+
+        <form method="post" action="{{ path('ex08_add_marital_status') }}" style="display:inline;">
+            <button type="submit">Ajouter la colonne <b>marital_status</b> à persons</button>
+        </form>
+
+        <form method="post" action="{{ path('ex08_relation_bank_account') }}" style="display:inline;">
+            <button type="submit">Créer la relation <b>persons &lt;-> bank_accounts</b></button>
+        </form>
+
+        <form method="post" action="{{ path('ex08_relation_address') }}" style="display:inline;">
+            <button type="submit">Créer la relation <b>persons &lt;-> addresses</b></button>
+        </form>
+    </div>
+
+    <hr>
+    <p>
+        <small>
+            Chacune de ces actions affiche un message de succès ou d’erreur.<br>
+            Si la table/colonne/relation existe déjà, tu auras un message d’info.<br>
+            Les boutons effectuent des requêtes <b>POST</b> conformément aux consignes.<br>
+        </small>
+    </p>
 {% endblock %}
