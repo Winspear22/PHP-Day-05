@@ -1,3 +1,28 @@
 ex06_index:
     path: /ex06
     controller: App\Controller\Ex06Controller::index
+    methods: [GET]
+
+ex06_insert_user:
+    path: /ex06/insert_user
+    controller: App\Controller\Ex06Controller::insertUser
+    methods: [POST]
+
+ex06_read_user:
+    path: /ex06/read_user
+    controller: App\Controller\Ex06Controller::readUser
+    methods: [GET]
+
+ex06_delete_user:
+    path: /ex06/delete_user/{id}
+    controller: App\Controller\Ex06Controller::deleteUser
+    methods: [POST]
+    requirements:
+        id: '\d+'
+
+ex06_update_user:
+    path: /ex06/update_user/{id}
+    controller: App\Controller\Ex06Controller::updateUser
+    methods: [GET, POST]
+    requirements:
+        id: '\d+'

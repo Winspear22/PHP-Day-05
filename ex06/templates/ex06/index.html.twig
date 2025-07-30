@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello Ex06Controller!{% endblock %}
+
+{% block body %}
+<h1>Ex06 - SQL</h1>
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }}">{{ message }}</div>
+    {% endfor %}
+{% endfor %}
+
+{{ form_start(form, { 'action': path('ex06_insert_user'), 'method': 'POST' }) }}
+    {{ form_widget(form) }}
+    <button type="submit">Insérer</button>
+{{ form_end(form) }}
+
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Pseudo</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Enable</th>
+            <th>Date de naissance</th>
+            <th>Adresse</th>
+            <th>Update</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.enable ? 'Oui' : 'Non' }}</td>
+                <td>{{ user.birthdate|date('Y-m-d') }}</td>
+                <td>{{ user.address }}</td>
+                <td>
+                    <a href="{{ path('ex06_update_user', {'id': user.id}) }}">Update (GET)</a>
+                </td>
+                <td>
+                    <form method="post" action="{{ path('ex06_delete_user', {'id': user.id}) }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Delete user #{{ user.id }}?')">Delete (POST)</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="9">Aucun utilisateur.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+
+{% endblock %}

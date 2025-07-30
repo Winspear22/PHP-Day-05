@@ -2,211 +2,296 @@
 
 namespace App\Controller;
 
+use DateTime;
+use Throwable;
+use RuntimeException;
+use DateTimeInterface;
 use Doctrine\DBAL\Connection;
+use App\Service\UserReadService;
+use App\Service\UserDeleteService;
+use App\Service\UserInsertService;
+use App\Service\UserUpdateService;
+use App\Service\TableCreatorService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Validator\Constraints\LessThanOrEqual;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-class Ex06Controller extends AbstractController
+final class Ex06Controller extends AbstractController
 {
-    const SUCCESS = 0;
-	const FAILURE = 1;
-	const DOES_NOT_EXIST = 2;
-
-
-	/**
-	* @Route("/ex06", name="ex06_index")
-	*/
-	public function index(Connection $connection, Request $request): Response
-	{
-		try
-		{
-			$tableName = "persons";
-
-			// 1. Vérifier et créer table si besoin, puis recharger la liste
-			$tableStatus = $this->tableExistenceCheck($tableName, $connection);
-			if ($tableStatus['status'] === self::DOES_NOT_EXIST) 
-			{
-				$this->addFlash('notice', $tableStatus['message']);
-				$creationResult = $this->createTable($tableName, $connection);
-				$this->addFlash('notice', $creationResult['message']);
-				$genMessages = $this->generatePersons($connection, $tableName, 10);
-				foreach ($genMessages as $msg) 
-				{
-					$this->addFlash('notice', $msg['message']);
-				}
-			}
-			$persons = $this->getAllPersons($connection, $tableName);
-
-			// 2. Gérer le paramètre d’édition
-			$editId = $request->query->get('edit');
-			$editPerson = null;
-			if ($editId) 
-			{
-				$editPerson = $this->getPersonById($connection, $tableName, (int)$editId);
-				if (!$editPerson)
-					$this->addFlash('notice', "Personne introuvable (ID $editId)");
-			}
-
-			// 3. Traitement du formulaire d'édition (POST)
-			if ($request->isMethod('POST') && $editId) {
-				$data = [
-					'username'  => $request->request->get('username'),
-					'name'      => $request->request->get('name'),
-					'email'     => $request->request->get('email'),
-					'enable'    => $request->request->get('enable', 0),
-					'birthdate' => $request->request->get('birthdate'),
-					'address'   => $request->request->get('address'),
-				];
-				$updateResult = $this->updatePerson($connection, $tableName, (int)$editId, $data);
-				$this->addFlash('notice', $updateResult['message']);
-				return $this->redirectToRoute('ex06_index');
-			}
-
-			// 4. Affichage
-			return $this->render('index.html.twig', [
-				'persons'    => $persons,
-				'editPerson' => $editPerson
-			]);
-		}
-		catch (\Exception $e)
-		{
-			$this->addFlash('error', 'Erreur générale : ' . $e->getMessage());
-			return $this->render('index.html.twig', [
-				'persons'    => [],
-				'editPerson' => null,
-			]);
-		}
-	}
-
-
-    private function createTable(string $tableName, Connection $connection): array
+    /**
+     * @Route("/ex06", name="ex06_index")
+     */
+    public function index(UserReadService $userReadService, Connection $connection, TableCreatorService $tableCreator): Response
     {
-        try 
+        $form = $this->createUserForm();
+        try
         {
-            $sql = "CREATE TABLE IF NOT EXISTS `$tableName` (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) UNIQUE,
-                name VARCHAR(255),
-                email VARCHAR(255) UNIQUE,
-                enable BOOLEAN,
-                birthdate DATETIME,
-                address LONGTEXT
-            ) ENGINE=InnoDB;";
-            $connection->executeStatement($sql);
-            return ['status' => self::SUCCESS, 'message' => "La table '$tableName' a été créée avec succès."];
-        } 
-        catch (\Exception $e) 
-        {
-            return ['status' => self::FAILURE, 'message' => "Erreur lors de la création de la table '$tableName' : " . $e->getMessage()];
+            $tableCreator->createTable($connection, 'users_ex06');
+            $users = $userReadService->getAllUsers($connection, 'users_ex06');
         }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', "Database error: " . $e->getMessage());
+            $users = [];
+        }
+        return $this->render('ex06/index.html.twig', [
+            'form' => $form->createView(),
+            'users' => $users
+        ]);
     }
 
 
-    private function tableExistenceCheck(string $tableName, Connection $connection): array
+    /**
+     * @Route("/ex06/insert_user", name="ex06_insert_user", methods={"POST"})
+     */
+    public function insertUser(Request $request, UserInsertService $userInsertService, Connection $connection): Response
     {
-        try 
+        try
         {
-            $doesTableExists = $connection->executeQuery("SHOW TABLES LIKE '$tableName'")->rowCount();
-            if ($doesTableExists > 0)
-                return ['status' => self::SUCCESS, 'message' => "La table $tableName existe déjà."];
-            return ['status' => self::DOES_NOT_EXIST, 'message' => "La table $tableName n'existe pas... "];
-        }
-        catch (\Exception $e) 
-        {
-            return ['status' => self::FAILURE, 'message' => "Erreur lors de la RECHERCHE de la table '$tableName' : " . $e->getMessage()];
-        }
-    }
+            $form = $this->createUserForm();
+            $form->handleRequest($request);
 
-
-    private function generatePersons(Connection $connection, string $tableName, int $nb): array
-    {
-        $messages = [];
-        for ($i = 1; $i <= $nb; $i++) 
-		{
-            $data = [
-                'username'  => 'user'.$i,
-                'name'      => 'Nom'.$i,
-                'email'     => 'user'.$i.'@mail.com',
-                'enable'    => rand(0,1),
-                'birthdate' => date('Y-m-d H:i:s', strtotime('-'.rand(18,40).' years')),
-                'address'   => 'Adresse '.$i.' avenue Testville'
-            ];
-            try 
-			{
-                $sql = "INSERT INTO `$tableName` (username, name, email, enable, birthdate, address)
-                        VALUES (:username, :name, :email, :enable, :birthdate, :address)";
-                $connection->executeStatement($sql, $data);
-                $messages[] = ['status' => self::SUCCESS, 'message' => "Personne $i ajoutée avec succès."];
-            } 
-			catch (\Exception $e) 
-			{
-                $messages[] = ['status' => self::FAILURE, 'message' => "Erreur personne $i : " . $e->getMessage()];
+            if ($form->isSubmitted() && $form->isValid())
+            {
+                $data = $form->getData();
+                $result = $userInsertService->insertUser($connection, 'users_ex06', $data);
+                [$type, $msg] = explode(':', $result, 2);
+                $this->addFlash($type, $msg);
+                return $this->redirectToRoute('ex06_index');
+            }
+            else
+            {
+                $this->addFlash('danger', 'Error, invalid form!');
+                return $this->redirectToRoute('ex06_index');
             }
         }
-        return $messages;
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Unexpected error while inserting user: ' . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
+        }
     }
 
-
-    private function updatePerson(Connection $connection, string $tableName, int $id, array $data): array
+    /**
+     * @Route("/ex06/read_user", name="ex06_read_user", methods={"GET"})
+     */
+    public function readUser(Connection $connection, UserReadService $userReadService): Response
     {
-        try 
+        try
         {
-            $sql = "UPDATE `$tableName` 
-                    SET username = :username,
-                        name = :name,
-                        email = :email,
-                        enable = :enable,
-                        birthdate = :birthdate,
-                        address = :address
-                    WHERE id = :id";
-            $connection->executeStatement($sql, [
-                'username'  => $data['username'],
-                'name'      => $data['name'],
-                'email'     => $data['email'],
-                'enable'    => !empty($data['enable']) ? 1 : 0,
-                'birthdate' => $data['birthdate'],
-                'address'   => $data['address'],
-                'id'        => $id
+            $users = $userReadService->getAllUsers($connection, 'users_ex06');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Unexpected error while reading users: ' . $e->getMessage());
+            $users = [];
+        }
+        return $this->render('ex06/index.html.twig', [
+            'users' => $users
+        ]);
+    }
+
+    /**
+     * @Route("/ex06/delete_user/{id}", name="ex06_delete_user", methods={"POST"})
+     */
+    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id): Response
+    {
+        try
+        {
+            $result = $userDeleteService->deleteUser($connection, 'users_ex06', $id);
+            [$type, $msg] = explode(':', $result, 2);
+            $this->addFlash($type, $msg);
+            return $this->redirectToRoute('ex06_index');
+
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Unexpected error while deleting user: " . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
+        }
+    }
+
+    /**
+     * @Route("/ex06/update_user/{id}", name="ex06_update_user", methods={"GET", "POST"})
+    */
+    public function updateUser(
+        int $id,
+        Request $request,
+        UserReadService $userReadService,
+        UserUpdateService $userUpdateService,
+        Connection $connection
+    ): Response
+    {
+        try
+        {
+            $user = $userReadService->getUserById($connection, 'users_ex06', $id);
+            if (!$user)
+            {
+                $this->addFlash('danger', "User $id does not exist.");
+                return $this->redirectToRoute('ex06_index');
+            }
+            if (isset($user['enable']))
+                $user['enable'] = (bool)$user['enable'];
+            if (isset($user['birthdate']) && !($user['birthdate'] instanceof DateTimeInterface))
+                $user['birthdate'] = new DateTime($user['birthdate']);
+            $form = $this->updateUserForm($user);
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid())
+            {
+                $data = $form->getData();
+                $result = $userUpdateService->updateUser($connection, 'users_ex06', $id, $data);
+                [$type, $msg] = explode(':', $result, 2);
+                $this->addFlash($type, $msg);
+                return $this->redirectToRoute('ex06_index');
+            }
+
+            return $this->render('ex06/edit.html.twig', [
+                'form' => $form->createView(),
+                'user' => $user,
             ]);
-            return ['status' => self::SUCCESS, 'message' => "Modification réussie !"];
-        } 
-        catch (\Exception $e) 
+        }
+        catch (RuntimeException $e)
         {
-            return ['status' => self::FAILURE, 'message' => "Erreur lors de la modification : " . $e->getMessage()];
+            $this->addFlash('danger', "Error, the form creation had a problem : " . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Unexpected error while updating user: ' . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
         }
     }
 
-    /*========================================================================================*/
-	/*--------------------------------------- GETTER -----------------------------------------*/
-	/*========================================================================================*/
-	
-	private function getAllPersons(Connection $connection, string $tableName): array
-	{
-		try 
-		{
-			$sql = "SELECT * FROM `$tableName` ORDER BY id DESC";
-			return $connection->fetchAllAssociative($sql);
-		} 
-		catch (\Exception $e) 
-		{
-			return [];
-		}
-	}
-
-    private function getPersonById(Connection $connection, string $tableName, int $id): ?array
+    private function createUserForm()
     {
-        try 
-		{
-            $sql = "SELECT * FROM `$tableName` WHERE id = :id";
-            $person = $connection->fetchAssociative($sql, ['id' => $id]);
-            return $person ?: null;
-        } 
-		catch (\Exception $e) 
-		{
-            return null;
-        }
+        return $this->createFormBuilder()
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                ]),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
+            ])
+            ->getForm();
+    }
+
+    private function updateUserForm(array $user)
+    {
+        return $this->createFormBuilder($user)
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+                // Le champ sera coché ou non selon $user['enable']
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+                // Symfony convertit le champ automatiquement si la valeur du tableau $user est correcte (format 'Y-m-d H:i:s')
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                    ]),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
+            ])
+            ->getForm();
     }
 
 
