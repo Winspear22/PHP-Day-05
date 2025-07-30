@@ -35,8 +35,7 @@ class TablesCreatorService
         $sql = "CREATE TABLE IF NOT EXISTS $tableName (
             id INT AUTO_INCREMENT PRIMARY KEY,
             iban VARCHAR(34) NOT NULL,
-            bank_name VARCHAR(50) NOT NULL,
-            person_id INT UNIQUE
+            bank_name VARCHAR(50) NOT NULL
         )";
 		try
 		{
@@ -55,8 +54,7 @@ class TablesCreatorService
     {
         $sql = "CREATE TABLE IF NOT EXISTS $tableName (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            address LONGTEXT NOT NULL,
-            person_id INT NOT NULL
+            address LONGTEXT NOT NULL
         )";
 		try
 		{
