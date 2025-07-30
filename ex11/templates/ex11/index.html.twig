@@ -3,18 +3,15 @@
 {% block title %}Hello Ex11Controller!{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    <h1>Initialisation des tables</h1>
+    <form action="{{ path('ex11_create_all_tables') }}" method="post">
+        <button type="submit">Créer toutes les tables (persons, bank_accounts, addresses)</button>
+    </form>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
-
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/home/adnen/Desktop/Day-05/ex11/src/Controller/Ex11Controller.php</code></li>
-        <li>Your template at <code>/home/adnen/Desktop/Day-05/ex11/templates/ex11/index.html.twig</code></li>
-    </ul>
-</div>
+    {# Affiche les messages flash #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
 {% endblock %}

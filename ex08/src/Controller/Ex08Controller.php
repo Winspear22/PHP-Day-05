@@ -14,7 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 final class Ex08Controller extends AbstractController
 {
     /**
-     * @Route("/ex06", name="ex06_index")
+     * @Route("/ex08", name="ex08_index")
      */
     public function index(): Response
     {  
