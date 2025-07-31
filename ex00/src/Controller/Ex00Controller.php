@@ -7,6 +7,7 @@ use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Throwable;
 
 final class Ex00Controller extends AbstractController
 {
@@ -26,9 +27,17 @@ final class Ex00Controller extends AbstractController
      */
     public function createTable(TableCreatorService $tableCreator, Connection $connection): Response
     {
-        $result = $tableCreator->createTable($connection, 'users');
-        [$type, $msg] = explode(':', $result, 2);
-        $this->addFlash($type, $msg);
-        return $this->redirectToRoute('ex00_index');
+        try
+        {
+            $result = $tableCreator->createTable($connection, 'users');
+            [$type, $msg] = explode(':', $result, 2);
+            $this->addFlash($type, $msg);
+            return $this->redirectToRoute('ex00_index');
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error creating table: ' . $e->getMessage());
+            return $this->redirectToRoute('ex00_index');
+        }
     }
 }

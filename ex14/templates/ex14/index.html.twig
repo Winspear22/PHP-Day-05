@@ -1,6 +1,59 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello Ex14Controller!{% endblock %}
+{% block title %}ex14 – SQL Injection Demo{% endblock %}
 
 {% block body %}
+    <h1>ex14 – SQL Injection Demo</h1>
+
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}" style="margin-bottom: 0.5em;">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+	{% if tableExists %}
+		<div class="alert alert-success">Table "{{ tableName }}" exists.</div>
+	{% else %}
+		<div class="alert alert-danger">Table "{{ tableName }}" does not exist. Please create it first.</div>
+	{% endif %} 
+    <form action="{{ path('ex14_create_table') }}" method="post" style="margin-bottom: 1em;">
+        <button type="submit">Create ex14_comments table</button>
+    </form>
+    <h2>Insert Comment (VULNERABLE – Classic SQL injection!)</h2>
+    <form id="vuln-form" action="{{ path('ex14_insert_vulnerable_comment') }}" method="post" style="margin-bottom: 1em;">
+        <input type="text" name="comment" id="vuln-comment" placeholder="Enter comment (vulnerable)">
+        <button type="submit">Insert (Vulnerable)</button>
+    </form>
+    <button type="button" onclick="injectSQL()">Inject SQL via JS</button>
+
+    <h2>Insert Comment (SECURE – Parameterized)</h2>
+    <form action="{{ path('ex14_insert_secure_comment') }}" method="post" style="margin-bottom: 1em;">
+        <input type="text" name="comment" placeholder="Enter comment (safe)">
+        <button type="submit">Insert (Secure)</button>
+    </form>
+
+    <h2>All Comments</h2>
+    <table border="1" style="width: 100%; margin-bottom: 2em;">
+        <tr>
+            <th>Id</th>
+            <th>Comment</th>
+        </tr>
+        {% for c in comments %}
+            <tr>
+                <td>{{ c.id }}</td>
+                <td>{{ c.comment }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="2"><em>No comments found</em></td></tr>
+        {% endfor %}
+    </table>
+
+    <script>
+    // Ceci va remplir le champ avec une injection SQL classique
+    function injectSQL() {
+        document.getElementById('vuln-comment').value = "'); DROP TABLE ex14_comments; --";
+        document.getElementById('vuln-form').submit();
+    }
+    </script>
 {% endblock %}
