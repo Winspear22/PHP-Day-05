@@ -2,58 +2,133 @@
 
 namespace App\Controller;
 
+use Throwable;
 use App\Entity\User;
-use App\Form\UserType;
-use Doctrine\ORM\EntityManagerInterface;
+use RuntimeException;
+use App\Service\UserReadService;
+use App\Service\UserInsertService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Validator\Constraints\LessThanOrEqual;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-class Ex03Controller extends AbstractController
+final class Ex03Controller extends AbstractController
 {
     /**
-     * @Route("/ex03", name="ex03_index")
+     * @Route("/ex03", name="ex03_index", methods={"GET", "POST"})
      */
-    public function index(Request $request, EntityManagerInterface $em): Response
+    public function index(
+        Request $request,
+        UserReadService $userReadService,
+        UserInsertService $userInsertService
+    ): Response
     {
-        $users = $this->safeGetAllUsers($em);
-
         $user = new User();
-        $form = $this->createForm(UserType::class, $user);
+        $form = $this->createUserForm($user);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) 
-		{
-            try 
-			{
-                $em->persist($user);
-                $em->flush();
-                $this->addFlash('success', 'Utilisateur créé avec succès.');
+        if ($form->isSubmitted() && $form->isValid())
+        {
+            try
+            {
+                $userInsertService->insertUser($user);
+                $this->addFlash('success', 'Success! User added successfully!');
                 return $this->redirectToRoute('ex03_index');
-            } 
-			catch (\Exception $e)
-			{
-                $this->addFlash('error', 'Erreur lors de la création de l\'utilisateur : ' . $e->getMessage());
+            }
+            catch (UniqueConstraintViolationException $e)
+            {
+                $this->addFlash('danger', 'Error, email or username already in use !');
+            }
+            catch (Throwable $e)
+            {
+                $this->addFlash('danger', 'Error, unexpected error: ' . $e->getMessage());
             }
         }
-
-        return $this->render('index.html.twig', [
+        try
+        {
+            $users = $userReadService->getAllUsers();
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', "Error, database error: " . $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Error, unexpected error: " . $e->getMessage());
+            $users = [];
+        }
+        return $this->render('ex03/index.html.twig', [
             'form' => $form->createView(),
             'users' => $users,
         ]);
     }
 
-    private function safeGetAllUsers(EntityManagerInterface $em): array
+
+    private function createUserForm(User $user): \Symfony\Component\Form\FormInterface
     {
-        try 
-		{
-            return $em->getRepository(User::class)->findAll();
-        } 
-		catch (\Exception $e) 
-		{
-            $this->addFlash('error', "Erreur lors de l'accès à la base de données : " . $e->getMessage());
-            return [];
-        }
+        return $this->createFormBuilder($user)
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                ]),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
+            ])
+            ->getForm();
     }
 }

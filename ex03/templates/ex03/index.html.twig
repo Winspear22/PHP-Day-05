@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ex03 - Insert and Read with ORM{% endblock %}
+
+{% block body %}
+    <h1>Ex03 – Insert and Read (ORM)</h1>
+
+    {# Affichage des messages flash #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    <h2>Ajouter un utilisateur</h2>
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit">Ajouter</button>
+    {{ form_end(form) }}
+
+    <h2>Liste des utilisateurs</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Enabled</th>
+                <th>Birthdate</th>
+                <th>Address</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.enable ? 'Yes' : 'No' }}</td>
+                    <td>{{ user.birthdate ? user.birthdate|date('Y-m-d H:i') : '' }}</td>
+                    <td>{{ user.address }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6">Aucun utilisateur trouvé.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
