@@ -2,10 +2,13 @@
 
 namespace App\Entity;
 
-use App\Repository\UserRepository;
+use DateTime;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\UserRepository;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name: "ex01_users")]
 class User
 {
     #[ORM\Id]
@@ -13,7 +16,7 @@ class User
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     private ?string $username = null;
 
     #[ORM\Column(length: 255)]
@@ -26,7 +29,10 @@ class User
     private ?bool $enable = null;
 
     #[ORM\Column]
-    private ?\DateTime $birthdate = null;
+    private ?DateTime $birthdate = null;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $address = null;
 
     public function getId(): ?int
     {
@@ -81,14 +87,26 @@ class User
         return $this;
     }
 
-    public function getBirthdate(): ?\DateTime
+    public function getBirthdate(): ?DateTime
     {
         return $this->birthdate;
     }
 
-    public function setBirthdate(\DateTime $birthdate): static
+    public function setBirthdate(DateTime $birthdate): static
     {
         $this->birthdate = $birthdate;
+
+        return $this;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(string $address): static
+    {
+        $this->address = $address;
 
         return $this;
     }

@@ -1,3 +1,8 @@
 ex01_index:
     path: /ex01
     controller: App\Controller\Ex01Controller::index
+
+ex01_create_table:
+    path: /ex01/create_table
+    controller: App\Controller\Ex01Controller::createTable
+    methods: POST

@@ -2,43 +2,44 @@
 
 namespace App\Controller;
 
+use Throwable;
 use App\Entity\User;
+use App\Service\TableCreatorService;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
-class Ex01Controller extends AbstractController
+final class Ex01Controller extends AbstractController
 {
+
     /**
      * @Route("/ex01", name="ex01_index")
      */
-    public function index(Request $request, EntityManagerInterface $em): Response
+    public function index(): Response
     {
-        if ($request->isMethod('POST')) 
+        return $this->render('ex01/index.html.twig', [
+            'controller_name' => 'Ex01Controller',
+        ]);
+    }
+
+    /**
+     * @Route("/ex01/create_table", name="ex01_create_table", methods={"POST"})
+     */
+    public function createTable(EntityManagerInterface $em, TableCreatorService $tableCreator): Response
+    {
+        try
         {
-            try 
-            {
-				$schemaManager = $em->getConnection()->createSchemaManager();
-				$schemaTool = new SchemaTool($em);
-				$metadata = [$em->getClassMetadata(User::class)];
-                if ($schemaManager->tablesExist(['user']))
-                    $this->addFlash('notice', "La table 'user' existe déjà.");
-                else 
-                {
-                    $schemaTool->createSchema($metadata);
-                    $this->addFlash('notice', "La table 'user' a été créée avec succès.");
-                }
-            } 
-            catch (\Exception $e) 
-            {
-                $this->addFlash('error', "Erreur lors de la création de la table : " . $e->getMessage());
-            }
+            $message = $tableCreator->createTable($em, User::class, 'ex01_users');
+            [$type, $text] = explode(':', $message, 2);
+            $this->addFlash($type, $text);
             return $this->redirectToRoute('ex01_index');
         }
-
-        return $this->render('index.html.twig');
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error creating table: ' . $e->getMessage());
+            return $this->redirectToRoute('ex01_index');
+        }
     }
 }

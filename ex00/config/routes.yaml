@@ -5,3 +5,4 @@ ex00_index:
 ex00_create_table:
     path: /ex00/create_table
     controller: App\Controller\Ex00Controller::createTable
+    methods: [POST]

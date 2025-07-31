@@ -23,7 +23,7 @@ final class Ex00Controller extends AbstractController
     }
 
     /**
-     * @Route("/ex00/create_table", name="ex00_create_table")
+     * @Route("/ex00/create_table", name="ex00_create_table", methods={"POST"})
      */
     public function createTable(TableCreatorService $tableCreator, Connection $connection): Response
     {
