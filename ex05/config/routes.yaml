@@ -1,5 +1,9 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute
+ex05_index:
+    path: /ex05
+    controller: App\Controller\Ex05Controller::index
+    methods: [GET, POST]
+
+ex05_delete:
+    path: /ex05/delete/{id}
+    controller: App\Controller\Ex05Controller::delete
+    methods: [POST]
