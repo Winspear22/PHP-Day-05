@@ -3,9 +3,11 @@
 namespace App\Entity;
 
 use App\Repository\AddressRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: AddressRepository::class)]
+#[ORM\Table(name: "ex09_addresses")]
 class Address
 {
     #[ORM\Id]
@@ -13,16 +15,11 @@ class Address
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $street = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $city = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $country = null;
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $address = null;
 
     #[ORM\ManyToOne(inversedBy: 'addresses')]
+    #[ORM\JoinColumn(nullable: false)]
     private ?Person $person = null;
 
     public function getId(): ?int
@@ -30,38 +27,14 @@ class Address
         return $this->id;
     }
 
-    public function getStreet(): ?string
+    public function getAddress(): ?string
     {
-        return $this->street;
+        return $this->address;
     }
 
-    public function setStreet(string $street): static
+    public function setAddress(string $address): static
     {
-        $this->street = $street;
-
-        return $this;
-    }
-
-    public function getCity(): ?string
-    {
-        return $this->city;
-    }
-
-    public function setCity(string $city): static
-    {
-        $this->city = $city;
-
-        return $this;
-    }
-
-    public function getCountry(): ?string
-    {
-        return $this->country;
-    }
-
-    public function setCountry(string $country): static
-    {
-        $this->country = $country;
+        $this->address = $address;
 
         return $this;
     }

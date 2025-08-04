@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PersonRepository::class)]
+#[ORM\Table(name: "ex09_persons")]
 class Person
 {
     #[ORM\Id]
@@ -15,7 +16,7 @@ class Person
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     private ?string $username = null;
 
     #[ORM\Column(length: 255)]
@@ -25,22 +26,19 @@ class Person
     private ?string $email = null;
 
     #[ORM\Column]
-    private ?bool $enable = null;
+    private ?bool $enabled = null;
 
     #[ORM\Column]
     private ?\DateTime $birthdate = null;
 
-    #[ORM\Column(length: 16)]
-    private ?string $marital_status = null;
+    #[ORM\OneToOne(mappedBy: 'person', cascade: ['persist', 'remove'])]
+    private ?BankAccount $bankAccount = null;
 
     /**
      * @var Collection<int, Address>
      */
-    #[ORM\OneToMany(targetEntity: Address::class, mappedBy: 'person', cascade: ['remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Address::class, mappedBy: 'person', orphanRemoval: true)]
     private Collection $addresses;
-
-    #[ORM\OneToOne(inversedBy: 'person', cascade: ['persist', 'remove'])]
-    private ?BankAccount $bank_account = null;
 
     public function __construct()
     {
@@ -88,14 +86,14 @@ class Person
         return $this;
     }
 
-    public function isEnable(): ?bool
+    public function isEnabled(): ?bool
     {
-        return $this->enable;
+        return $this->enabled;
     }
 
-    public function setEnable(bool $enable): static
+    public function setEnabled(bool $enabled): static
     {
-        $this->enable = $enable;
+        $this->enabled = $enabled;
 
         return $this;
     }
@@ -112,14 +110,19 @@ class Person
         return $this;
     }
 
-    public function getMaritalStatus(): ?string
+    public function getBankAccount(): ?BankAccount
     {
-        return $this->marital_status;
+        return $this->bankAccount;
     }
 
-    public function setMaritalStatus(string $marital_status): static
+    public function setBankAccount(BankAccount $bankAccount): static
     {
-        $this->marital_status = $marital_status;
+        // set the owning side of the relation if necessary
+        if ($bankAccount->getPerson() !== $this) {
+            $bankAccount->setPerson($this);
+        }
+
+        $this->bankAccount = $bankAccount;
 
         return $this;
     }
@@ -150,18 +153,6 @@ class Person
                 $address->setPerson(null);
             }
         }
-
-        return $this;
-    }
-
-    public function getBankAccount(): ?BankAccount
-    {
-        return $this->bank_account;
-    }
-
-    public function setBankAccount(?BankAccount $bank_account): static
-    {
-        $this->bank_account = $bank_account;
 
         return $this;
     }
