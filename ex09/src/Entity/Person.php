@@ -41,9 +41,6 @@ class Person
     #[ORM\OneToMany(targetEntity: Address::class, mappedBy: 'person', orphanRemoval: true)]
     private Collection $addresses;
 
-    #[ORM\Column(enumType: MaritalStatus::class, options: ["default" => "single"])]
-    private ?MaritalStatus $marital_status = MaritalStatus::SINGLE;
-
     public function __construct()
     {
         $this->addresses = new ArrayCollection();
@@ -161,6 +158,11 @@ class Person
         return $this;
     }
 
+
+        #[ORM\Column(enumType: MaritalStatus::class, options: ["default" => "single"])]
+    private ?MaritalStatus $marital_status = MaritalStatus::SINGLE;
+
+
     public function getMaritalStatus(): ?MaritalStatus
     {
         return $this->marital_status;
@@ -172,4 +174,23 @@ class Person
 
         return $this;
     }
+
+
+
+        #[ORM\Column(enumType: MaritalStatus::class, options: ["default" => "single"])]
+    private ?MaritalStatus $marital_status = MaritalStatus::SINGLE;
+
+
+    public function getMaritalStatus(): ?MaritalStatus
+    {
+        return $this->marital_status;
+    }
+
+    public function setMaritalStatus(MaritalStatus $marital_status): static
+    {
+        $this->marital_status = $marital_status;
+
+        return $this;
+    }
+
 }
