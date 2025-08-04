@@ -70,36 +70,45 @@ class TablesMigrationService
 	}
 
 
-    public function updateSchema(): string
-    {
+	public function updateSchema(): array
+	{
 		try
 		{
+			$personContent = file_get_contents($this->entityFilePath);
+			$snippet = file_get_contents($this->snippetFilePath);
+
+			if (strpos($personContent, $snippet) !== false)
+				return ['type' => 'info', 'message' => 'MaritalStatus property already present in entity, skipping injection.'];
 			$this->injectMaritalStatusProperty();
+
 			$process = new Process(['php', 'bin/console', 'doctrine:schema:update', '--force']);
-			$process->setWorkingDirectory($this->projectDir);  // <-- IMPORTANT
+			$process->setWorkingDirectory($this->projectDir);
 			$process->run();
-			
+
 			if (!$process->isSuccessful())
 				throw new ProcessFailedException($process);
-			return $process->getOutput();
+
+			return ['type' => 'success', 'message' => 'Database schema updated successfully.'];
 		}
 		catch (Throwable $e)
-		{			
-			return 'danger:Error, we could not update the schema: ' . $e->getMessage();
-		}	
-    }
+		{
+			return ['type' => 'danger', 'message' => 'Error, we could not update the schema: ' . $e->getMessage()];
+		}
+	}
 
-    public function injectMaritalStatusProperty(): void
-    {
-        $personContent = file_get_contents($this->entityFilePath);
-        $snippet = file_get_contents($this->snippetFilePath);
 
-        // Insertion juste avant le dernier '}'
-        $position = strrpos($personContent, '}');
-        if ($position === false)
-            throw new RuntimeException("Error, malformed entity file: cannot find closing brace.");
+	public function injectMaritalStatusProperty(): void
+	{
+		$personContent = file_get_contents($this->entityFilePath);
+		$snippet = file_get_contents($this->snippetFilePath);
 
-        $newContent = substr_replace($personContent, "\n\n    " . $snippet . "\n\n}", $position, 1);
-        file_put_contents($this->entityFilePath, $newContent);
-    }
+		// Insertion juste avant le dernier '}'
+		$position = strrpos($personContent, '}');
+		if ($position === false)
+			throw new RuntimeException("Error, malformed entity file: cannot find closing brace.");
+
+		$newContent = substr_replace($personContent, "\n\n    " . $snippet . "\n\n}", $position, 1);
+		file_put_contents($this->entityFilePath, $newContent);
+	}
+
 }

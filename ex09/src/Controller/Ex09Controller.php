@@ -64,7 +64,7 @@ final class Ex09Controller extends AbstractController
         try
         {
             $output = $schemaUpdateService->updateSchema();
-            $this->addFlash('success', 'Success! Database schema updated successfully.');
+            $this->addFlash($output['type'], $output['message']);
         }
         catch (Throwable $e)
         {

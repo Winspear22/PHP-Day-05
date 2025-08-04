@@ -159,22 +159,6 @@ class Person
     }
 
 
-        #[ORM\Column(enumType: MaritalStatus::class, options: ["default" => "single"])]
-    private ?MaritalStatus $marital_status = MaritalStatus::SINGLE;
-
-
-    public function getMaritalStatus(): ?MaritalStatus
-    {
-        return $this->marital_status;
-    }
-
-    public function setMaritalStatus(MaritalStatus $marital_status): static
-    {
-        $this->marital_status = $marital_status;
-
-        return $this;
-    }
-
 
 
         #[ORM\Column(enumType: MaritalStatus::class, options: ["default" => "single"])]
