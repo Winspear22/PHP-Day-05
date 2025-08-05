@@ -5,7 +5,7 @@ namespace App\Service;
 use Exception;
 use Doctrine\DBAL\Connection;
 
-class TableCreatorService
+class TableCreatorServiceSQL
 {
     public function createTable(Connection $connection, string $tableName): string
     {
