@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Snippet à copier dans Person.php{% endblock %}
+
+{% block body %}
+<h1>Code à ajouter dans Person.php</h1>
+<pre style="background:#eee;padding:1em;border-radius:6px;"><code>{{ snippet }}</code></pre>
+<p>
+    Après avoir ajouté le code, lance :<br>
+    <code>php bin/console doctrine:schema:update --force</code>
+    <br><br>
+    <a href="{{ path('ex09_index') }}">Retour</a>
+</p>
+{% endblock %}

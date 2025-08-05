@@ -1,5 +1,12 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute
+ex09_index:
+    path: /ex09
+    controller: App\Controller\Ex09Controller::index
+
+ex09_update_schema:
+    path: /ex09/update_schema
+    controller: App\Controller\Ex09Controller::updateSchema
+    methods: [POST]
+
+ex09_show_snippet:
+    path: /ex09/show_snippet
+    controller: App\Controller\Ex09Controller::showSnippet

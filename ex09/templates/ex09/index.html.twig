@@ -5,47 +5,28 @@
 {% block body %}
 <h1>Ex09 - Database & Entity Management</h1>
 
-{# Display flash messages #}
+{# Flash messages #}
 {% for label, messages in app.flashes %}
     {% for message in messages %}
-        <div class="alert alert-{{ label }}">
-            {{ message }}
-        </div>
+        <div class="alert alert-{{ label }}">{{ message|raw }}</div>
     {% endfor %}
 {% endfor %}
 
 <hr>
-
-<h2>Step 1: Tables Management</h2>
-
-<form action="{{ path('ex09_drop_tables') }}" method="post" style="margin-bottom: 1em;">
-    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all tables?')">
-        Drop all tables
-    </button>
-</form>
-
-<form action="{{ path('ex09_migrate') }}" method="post" style="margin-bottom: 1em;">
-    <button type="submit" class="btn btn-primary">
-        Run Migrations (Create Tables)
-    </button>
-</form>
-
+<h2>Étape 1 : Création de la structure de base</h2>
+<p>
+    Crée la base normalement en lançant :<br>
+    <code>php bin/console doctrine:schema:update --force</code>
+</p>
 <hr>
-
-<h2>Step 2: Marital Status Property Management</h2>
-
-<form action="{{ path('ex09_update_schema') }}" method="post" style="margin-bottom: 1em;">
+<h2>Étape 2 : Ajout automatique du champ marital_status</h2>
+<form action="{{ path('ex09_update_schema') }}" method="post">
     <button type="submit" class="btn btn-success">
-        Inject "marital_status" Property
+        Injecter automatiquement la propriété marital_status + update DB
     </button>
 </form>
-
-<form action="{{ path('ex09_remove_marital_status') }}" method="post" style="margin-bottom: 1em;">
-    <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to remove the marital_status property?')">
-        Remove "marital_status" Property
-    </button>
-</form>
-
-<hr>
-
+<p>
+    Ou <a href="{{ path('ex09_show_snippet') }}">voir le code à copier manuellement</a>
+    si tu veux faire l'ajout à la main.
+</p>
 {% endblock %}

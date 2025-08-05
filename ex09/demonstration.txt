@@ -1,0 +1,7 @@
+php bin/console doctrine:schema:update --force
+php bin/console doctrine:schema:drop --force
+
+
+A taper dans le mysql pour démontrer l'existence des foreign keys : 
+SHOW CREATE TABLE ex09_bank_accounts; --> Le 'UNIQUE KEY' confirme que c'est une relation OneToOne
+SHOW CREATE TABLE ex09_addresses; --> L'absence de 'UNIQUE' confirme que c'est une relation plurielle
