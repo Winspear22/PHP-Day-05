@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250804135727 extends AbstractMigration
+final class Version20250805090844 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -25,13 +25,11 @@ final class Version20250804135727 extends AbstractMigration
         $this->addSql('CREATE TABLE ex09_persons (id INT AUTO_INCREMENT NOT NULL, username VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL, enabled TINYINT(1) NOT NULL, birthdate DATETIME NOT NULL, marital_status VARCHAR(255) DEFAULT \'single\' NOT NULL, UNIQUE INDEX UNIQ_D69263B7F85E0677 (username), UNIQUE INDEX UNIQ_D69263B7E7927C74 (email), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci`');
         $this->addSql('ALTER TABLE ex09_addresses ADD CONSTRAINT FK_BFE0C88A217BBB47 FOREIGN KEY (person_id) REFERENCES ex09_persons (id)');
         $this->addSql('ALTER TABLE ex09_bank_accounts ADD CONSTRAINT FK_2820A988217BBB47 FOREIGN KEY (person_id) REFERENCES ex09_persons (id)');
-        $this->addSql('DROP TABLE ex07_users');
     }
 
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE TABLE ex07_users (id INT AUTO_INCREMENT NOT NULL, username VARCHAR(255) CHARACTER SET utf8mb4 NOT NULL COLLATE `utf8mb4_unicode_ci`, name VARCHAR(255) CHARACTER SET utf8mb4 NOT NULL COLLATE `utf8mb4_unicode_ci`, email VARCHAR(255) CHARACTER SET utf8mb4 NOT NULL COLLATE `utf8mb4_unicode_ci`, enable TINYINT(1) NOT NULL, birthdate DATETIME NOT NULL, address LONGTEXT CHARACTER SET utf8mb4 NOT NULL COLLATE `utf8mb4_unicode_ci`, UNIQUE INDEX UNIQ_584FE6F8E7927C74 (email), UNIQUE INDEX UNIQ_584FE6F8F85E0677 (username), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB COMMENT = \'\' ');
         $this->addSql('ALTER TABLE ex09_addresses DROP FOREIGN KEY FK_BFE0C88A217BBB47');
         $this->addSql('ALTER TABLE ex09_bank_accounts DROP FOREIGN KEY FK_2820A988217BBB47');
         $this->addSql('DROP TABLE ex09_addresses');

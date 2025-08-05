@@ -47,11 +47,11 @@ final class Ex09Controller extends AbstractController
         try
         {
             $output = $migrationRunnerService->migrate();
-            $this->addFlash('success', 'Success! Migration succeeded.');
+            $this->addFlash($output['type'], $output['message']);
         }
         catch (Throwable $e)
         {
-            $this->addFlash('danger', 'Error, migration failed: ' . $e->getMessage());
+            $this->addFlash('danger', 'Erreur lors de la migration : ' . $e->getMessage());
         }
         return $this->redirectToRoute('ex09_index');
     }
@@ -72,5 +72,16 @@ final class Ex09Controller extends AbstractController
         }
         return $this->redirectToRoute('ex09_index');
     }
+
+    /**
+     * @Route("/ex09/remove_marital_status", name="ex09_remove_marital_status", methods={"POST"})
+     */
+public function removeMaritalStatus(TablesMigrationService $migrationService): Response
+{
+    $output = $migrationService->removeMaritalStatusCleanly();
+    $this->addFlash($output['type'], $output['message']);
+    return $this->redirectToRoute('ex09_index');
+}
+
 
 }

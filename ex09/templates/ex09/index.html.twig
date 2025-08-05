@@ -1,11 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Ex09 - Gestion des tables et migration{% endblock %}
+{% block title %}Ex09 - Database & Entity Management{% endblock %}
 
 {% block body %}
-<h1>Ex09 - Gestion des tables et migration</h1>
+<h1>Ex09 - Database & Entity Management</h1>
 
-{# Affichage des messages flash #}
+{# Display flash messages #}
 {% for label, messages in app.flashes %}
     {% for message in messages %}
         <div class="alert alert-{{ label }}">
@@ -14,21 +14,38 @@
     {% endfor %}
 {% endfor %}
 
+<hr>
+
+<h2>Step 1: Tables Management</h2>
+
 <form action="{{ path('ex09_drop_tables') }}" method="post" style="margin-bottom: 1em;">
-    <button type="submit" class="btn btn-danger" onclick="return confirm('Confirmer la suppression de toutes les tables ?')">
-        Supprimer toutes les tables
+    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all tables?')">
+        Drop all tables
     </button>
 </form>
 
 <form action="{{ path('ex09_migrate') }}" method="post" style="margin-bottom: 1em;">
     <button type="submit" class="btn btn-primary">
-        Lancer les migrations (création des tables)
+        Run Migrations (Create Tables)
     </button>
 </form>
 
+<hr>
+
+<h2>Step 2: Marital Status Property Management</h2>
+
 <form action="{{ path('ex09_update_schema') }}" method="post" style="margin-bottom: 1em;">
-    <button type="submit" class="btn btn-warning">
-        Mettre à jour le schéma (ajout marital_status)
+    <button type="submit" class="btn btn-success">
+        Inject "marital_status" Property
     </button>
 </form>
+
+<form action="{{ path('ex09_remove_marital_status') }}" method="post" style="margin-bottom: 1em;">
+    <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to remove the marital_status property?')">
+        Remove "marital_status" Property
+    </button>
+</form>
+
+<hr>
+
 {% endblock %}
