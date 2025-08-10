@@ -1,5 +1,33 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute
+ex10_index:
+    path: /ex10
+    controller: App\Controller\Ex10Controller::index
+    methods: [GET]
+
+ex10_insert_data_sql:
+    path: /ex10/insert_data_sql
+    controller: App\Controller\Ex10Controller::insertDataSQL
+    methods: [POST]
+
+ex10_insert_data_orm:
+    path: /ex10/insert_data_orm
+    controller: App\Controller\Ex10Controller::insertDataORM
+    methods: [POST]
+
+ex10_delete_data_sql:
+    path: /ex10/delete_data_sql/{id}
+    controller: App\Controller\Ex10Controller::deleteDataSQL
+    methods: [POST]
+    requirements:
+        id: '\d+'
+
+ex10_delete_data_orm:
+    path: /ex10/delete_data_orm/{id}
+    controller: App\Controller\Ex10Controller::delete
+    methods: [POST]
+    requirements:
+        id: '\d+'
+
+ex10_import_file:
+    path: /ex10/import_file
+    controller: App\Controller\Ex10Controller::importFile
+    methods: [POST]

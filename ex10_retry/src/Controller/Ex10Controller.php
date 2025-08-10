@@ -180,18 +180,59 @@ final class Ex10Controller extends AbstractController
             ->getForm();
     }
 
-        private function createDataFormORM()
+    /**
+     * @Route("/ex10/import_file", name="ex10_import_file", methods={"POST"})
+     */
+    public function importFile(
+        Connection $connection,
+        TableCreatorServiceSQL $tableCreatorSQL,
+        DataInsertServiceSQL $dataInsertServiceSQL,
+        DataInsertServiceORM $dataInsertServiceORM
+    ): Response
     {
-        return $this->createFormBuilder()
-            ->add('comment', TextType::class, [
-                'label' => 'Comment',
-                'constraints' => [
-                    new NotBlank(['message' => 'Comment is required.']),
-                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
-                ],
-                'attr' => ['maxlength' => 255, 'placeholder' => 'Your comment']
-            ])
-            ->getForm();
+        try
+        {
+            // Chemin vers le fichier à la racine du projet
+            $filePath = $this->getParameter('kernel.project_dir') . '/text.txt';
+
+            if (!file_exists($filePath))
+            {
+                $this->addFlash('danger', 'Error ! Could not find text.txt.');
+                return $this->redirectToRoute('ex10_index');
+            }
+
+            // Lecture du fichier (une ligne = une donnée)
+            $content = array_map(
+            fn($line) => htmlspecialchars($line, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
+            );
+            $date = new DateTime();
+
+            // Création de la table SQL si besoin
+            $tableCreatorSQL->createTable($connection, 'ex10_data_sql');
+
+            // Insertion SQL
+            foreach ($content as $line)
+                $dataInsertServiceSQL->insertData($connection, 'ex10_data_sql', $line, $date);
+
+            // Insertion ORM
+            foreach ($content as $line)
+            {
+                $dataEntity = new Data();
+                $dataEntity->setContent($line);
+                $dataEntity->setDate($date);
+                $dataInsertServiceORM->insertData($dataEntity);
+            }
+
+            $this->addFlash('success', 'Success! The SQL and ORM import was successful !');
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error during the file import : ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('ex10_index');
     }
+        
 }
 ?>
