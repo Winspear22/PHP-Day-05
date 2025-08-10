@@ -5,21 +5,17 @@ namespace App\Controller;
 use DateTime;
 use Throwable;
 use RuntimeException;
-use DateTimeInterface;
 use Doctrine\DBAL\Connection;
-use App\Service\UserReadService;
-use App\Service\UserDeleteService;
-use App\Service\TableCreatorService;
+use App\Service\DataReadServiceSQL;
 use App\Service\DataDeleteServiceSQL;
 use App\Service\DataInsertServiceSQL;
+use App\Service\TableCreatorServiceSQL;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
-use Symfony\Component\Validator\Constraints\LessThanOrEqual;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 final class Ex10Controller extends AbstractController
@@ -27,27 +23,27 @@ final class Ex10Controller extends AbstractController
 /**
      * @Route("/ex10", name="ex10_index")
      */
-    public function index(UserReadService $userReadService, Connection $connection, TableCreatorService $tableCreator): Response
+    public function index(DataReadServiceSQL $dataReadService, Connection $connection, TableCreatorServiceSQL $tableCreator): Response
     {
         $form = $this->createDataForm();
         try
         {
             $tableCreator->createTable($connection, 'ex10_data_sql');
-            $users = $userReadService->getAllUsers($connection, 'ex10_data_sql');
+            $data = $dataReadService->getAllDatas($connection, 'ex10_data_sql');
         }
         catch (RuntimeException $e)
         {
             $this->addFlash('danger', "Error, database error: " . $e->getMessage());
-            $users = [];
+            $data = [];
         }
         catch (Throwable $e)
         {
             $this->addFlash('danger', "Error, unexpected error: " . $e->getMessage());
-            $users = [];
+            $data = [];
         }
         return $this->render('ex10/index.html.twig', [
             'form' => $form->createView(),
-            'users' => $users
+            'datas' => $data
         ]);
     }
 
@@ -65,7 +61,7 @@ final class Ex10Controller extends AbstractController
 
             if ($form->isSubmitted() && $form->isValid())
             {
-                $data = $form->getData();
+                $data = $form->get('comment')->getData();
                 $result = $dataInsertService->insertData($connection, 'ex10_data_sql', $data, $date);
                 [$type, $msg] = explode(':', $result, 2);
                 $this->addFlash($type, $msg);
@@ -91,7 +87,7 @@ final class Ex10Controller extends AbstractController
     {
         try
         {
-            $result = $dataDeleteService->deleteData($connection, 'users_ex10', $id);
+            $result = $dataDeleteService->deleteData($connection, 'ex10_data_sql', $id);
             [$type, $msg] = explode(':', $result, 2);
             $this->addFlash($type, $msg);
             return $this->redirectToRoute('ex10_index');
@@ -111,21 +107,10 @@ final class Ex10Controller extends AbstractController
                 'label' => 'Comment',
                 'constraints' => [
                     new NotBlank(['message' => 'Comment is required.']),
-                    new Length(['max' => 255, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
                 ],
                 'attr' => ['maxlength' => 255, 'placeholder' => 'Your comment']
             ])
-            /*->add('birthdate', DateTimeType::class, [
-                'label' => 'Birthdate',
-                'widget' => 'single_text',
-                'constraints' => [
-                    new NotBlank(['message' => 'Birthdate is required.']),
-                    new LessThanOrEqual([
-                        'value' => 'today',
-                        'message' => 'Birthdate cannot be in the future.'
-                    ]),
-                ],
-            ])*/
             ->getForm();
     }
 }
