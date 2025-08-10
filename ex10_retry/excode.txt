@@ -1,0 +1,220 @@
+<?php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+final class Ex10Controller extends AbstractController
+{
+    #[Route('/ex10', name: 'app_ex10')]
+    public function index(): Response
+    {
+        return $this->render('ex10/index.html.twig', [
+            'controller_name' => 'Ex10Controller',
+        ]);
+    }
+}
+<?php
+
+namespace App\Service;
+
+use Exception;
+use Doctrine\DBAL\Connection;
+
+class DataDeleteServiceSQL
+{
+    public function deleteRecord(Connection $connection, string $tableName, int $id): string
+    {
+        try
+        {
+            $exists = $connection->fetchOne("SELECT COUNT(*) FROM $tableName WHERE id = :id", ['id' => $id]);
+            if (!$exists)
+                return "danger:Error, data $id does not exist.";
+            $connection->executeStatement("DELETE FROM $tableName WHERE id = :id", ['id' => $id]);
+            return "success:Success! Data $id deleted.";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error while deleting data $id: " . $e->getMessage();
+        }
+    }
+}
+?><?php
+
+namespace App\Service;
+
+use Exception;
+use Doctrine\DBAL\Connection;
+
+class DataInsertServiceSQL
+{
+    public function insertRecord(Connection $connection, string $tableName, string $data, \DateTimeInterface $date): string
+    {
+        $sql = "INSERT INTO $tableName (data, date) VALUES (:data, :date)";
+        try
+        {
+            $connection->executeStatement($sql, [
+                'data' => $data,
+                'date' => $date->format('Y-m-d H:i:s'),
+            ]);
+            return "success:Success! Data has been inserted into table $tableName.";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error, there was a problem inserting into table $tableName: " . $e->getMessage();
+        }
+    }
+}
+?><?php
+
+namespace App\Service;
+
+use Exception;
+use RuntimeException;
+use Doctrine\DBAL\Connection;
+
+class DataReadServiceSQL
+{
+    public function getAllRecords(Connection $connection, string $tableName): array
+    {
+        $sql = "SELECT * FROM $tableName ORDER BY id ASC";
+        try
+        {
+            return $connection->fetchAllAssociative($sql);
+        }
+        catch (Exception $e)
+        {
+            throw new RuntimeException("Error: Cannot display the data list for table $tableName: " . $e->getMessage());
+        }
+    }
+
+    public function getRecordById(Connection $connection, string $tableName, int $id): ?array
+    {
+        try
+        {
+            $record = $connection->fetchAssociative("SELECT * FROM $tableName WHERE id = :id", ['id' => $id]);
+            return $record ?: null;
+        }
+        catch (Exception $e)
+        {
+            throw new RuntimeException("Error: Could not fetch the record with id $id: " . $e->getMessage());
+        }
+    }
+}
+?><?php
+
+namespace App\Service;
+
+use Exception;
+use Doctrine\DBAL\Connection;
+
+class TableCreatorServiceSQL
+{
+    public function createTable(Connection $connection, string $tableName): string
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS ex10_sql_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                data VARCHAR(255) NOT NULL,
+                date DATETIME NOT NULL
+            );";
+        try
+        {
+            if ($this->checkTableExistence($connection, $tableName))
+                return "info:The table $tableName already exists and cannot be created again.";
+            $connection->executeStatement($sql);
+            return "success:Success! The table $tableName was created!";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error, there was a problem in the table $tableName creation : " . $e->getMessage();
+        }
+    }
+
+    private function checkTableExistence(Connection $connection, string $tableName): bool
+    {
+        try
+        {
+            $result = $connection->fetchOne("SHOW TABLES LIKE '$tableName'");
+            return ($result !== false);
+        }
+        catch (Exception $e)
+        {
+            return false;
+        }
+    }
+}
+?>controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello Ex10Controller!{% endblock %}
+
+{% block body %}
+<style>
+    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
+    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+</style>
+
+<div class="example-wrapper">
+    <h1>Hello {{ controller_name }}! ✅</h1>
+
+    This friendly message is coming from:
+    <ul>
+        <li>Your controller at <code>/home/adnen/Desktop/Day-05/ex10_retry/src/Controller/Ex10Controller.php</code></li>
+        <li>Your template at <code>/home/adnen/Desktop/Day-05/ex10_retry/templates/ex10/index.html.twig</code></li>
+    </ul>
+</div>
+{% endblock %}
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    annotations: true
+    http_method_override: false
+    handle_all_throwables: true
+
+    # Enables session support. Note that the session will ONLY be started if you read or write from it.
+    # Remove or comment this section to explicitly disable session support.
+    session:
+        handler_id: null
+        cookie_secure: auto
+        cookie_samesite: lax
+
+    #esi: true
+    #fragments: true
+    php_errors:
+        log: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file
