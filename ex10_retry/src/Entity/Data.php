@@ -6,6 +6,7 @@ use App\Repository\DataRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: DataRepository::class)]
+#[ORM\Table(name: "ex10_data_orm")]
 class Data
 {
     #[ORM\Id]
