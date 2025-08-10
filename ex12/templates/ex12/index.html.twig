@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}ex12 – ORM Table Management{% endblock %}
+
+{% block body %}
+    <h1>ex12 – ORM Table Management</h1>
+
+    {# Flash messages #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}" style="margin-bottom: 0.5em;">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+<form method="get" action="{{ path('ex12_index') }}" style="margin-bottom: 1em;">
+    <input type="text" name="filter_name" value="{{ filter_name }}" placeholder="Filter by name">
+    <button type="submit" name="action" value="search">🔍 Search</button>
+</form>
+
+<form method="get" action="{{ path('ex12_index') }}" style="margin-bottom: 1em;">
+    <select name="sort_by">
+        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+        <option value="email" {% if sort_by == 'email' %}selected{% endif %}>Email</option>
+        <option value="birthdate" {% if sort_by == 'birthdate' %}selected{% endif %}>Birthdate</option>
+    </select>
+    <select name="sort_dir">
+        <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>Asc</option>
+        <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>Desc</option>
+    </select>
+    <button type="submit" name="action" value="sort">↕ Sort</button>
+</form>
+
+    <h2>Persons + Addresses + Bank Accounts</h2>
+    <table border="1" style="width: 100%; margin-bottom: 2em;">
+        <tr>
+            <th>Id</th>
+            <th>Username</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Enabled</th>
+            <th>Birthdate</th>
+            <th>Addresses</th>
+            <th>IBAN</th>
+            <th>Bank Name</th>
+        </tr>
+        {% for p in data %}
+            <tr>
+                <td>{{ p.id }}</td>
+                <td>{{ p.username }}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.email }}</td>
+                <td>{{ p.enabled ? 'Yes' : 'No' }}</td>
+                <td>{{ p.birthdate|date('Y-m-d') }}</td>
+                <td>
+                    {% for addr in p.addresses %}
+                        {{ addr.address }}<br>
+                    {% endfor %}
+                </td>
+                <td>{{ p.bankAccount ? p.bankAccount.iban : '' }}</td>
+                <td>{{ p.bankAccount ? p.bankAccount.bankName : '' }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="9"><em>No data found</em></td></tr>
+        {% endfor %}
+    </table>
+{% endblock %}

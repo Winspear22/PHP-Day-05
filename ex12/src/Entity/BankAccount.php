@@ -6,6 +6,7 @@ use App\Repository\BankAccountRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: BankAccountRepository::class)]
+#[ORM\Table(name: "ex12_bank_accounts")]
 class BankAccount
 {
     #[ORM\Id]
@@ -16,10 +17,11 @@ class BankAccount
     #[ORM\Column(length: 34)]
     private ?string $iban = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $bank_name = null;
+    #[ORM\Column(length: 50)]
+    private ?string $bankName = null;
 
-    #[ORM\OneToOne(mappedBy: 'bank_account', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: 'bankAccount', cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: false)]
     private ?Person $person = null;
 
     public function getId(): ?int
@@ -41,12 +43,12 @@ class BankAccount
 
     public function getBankName(): ?string
     {
-        return $this->bank_name;
+        return $this->bankName;
     }
 
-    public function setBankName(string $bank_name): static
+    public function setBankName(string $bankName): static
     {
-        $this->bank_name = $bank_name;
+        $this->bankName = $bankName;
 
         return $this;
     }
@@ -56,18 +58,8 @@ class BankAccount
         return $this->person;
     }
 
-    public function setPerson(?Person $person): static
+    public function setPerson(Person $person): static
     {
-        // unset the owning side of the relation if necessary
-        if ($person === null && $this->person !== null) {
-            $this->person->setBankAccount(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($person !== null && $person->getBankAccount() !== $this) {
-            $person->setBankAccount($this);
-        }
-
         $this->person = $person;
 
         return $this;

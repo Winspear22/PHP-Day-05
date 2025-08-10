@@ -3,12 +3,7 @@ ex12_index:
     controller: App\Controller\Ex12Controller::index
     methods: [GET]
 
-ex12_add_test_persons:
-    path: /ex12/add-test-persons
-    controller: App\Controller\Ex12Controller::addTestPersons
-    methods: [POST]
-
-ex12_drop_all:
-    path: /ex12/drop-all
-    controller: App\Controller\Ex12Controller::dropAll
+ex12_fill_all_tables:
+    path: /ex12/fill_tables
+    controller: App\Controller\Ex12Controller::fillAllTables
     methods: [POST]

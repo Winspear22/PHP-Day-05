@@ -6,9 +6,6 @@ use App\Entity\Person;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<Person>
- */
 class PersonRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,33 +13,39 @@ class PersonRepository extends ServiceEntityRepository
         parent::__construct($registry, Person::class);
     }
 
-public function findWithFilters(?string $filterName, string $sortBy = 'name', string $sortDir = 'asc')
-{
-    $qb = $this->createQueryBuilder('p')
-        ->leftJoin('p.addresses', 'a')
-        ->leftJoin('p.bank_account', 'b')
-        ->addSelect('a', 'b');
-
-    if ($filterName) 
+    /**
+     * Retourne les personnes avec leurs adresses et comptes bancaires,
+     * filtrées/triées comme dans l'ex11.
+     */
+    public function getPersonsGrouped(
+        string $filterName = '',
+        string $sortBy = 'name',
+        string $sortDir = 'asc'
+    ): array
     {
-        $qb->andWhere('p.name LIKE :filterName')
-        ->setParameter('filterName', '%' . $filterName . '%');
+        // Mapping des champs autorisés
+        $allowedSorts = ['name', 'email', 'birthdate'];
+        $allowedDir = ['asc', 'desc'];
+
+        if (!in_array($sortBy, $allowedSorts, true))
+            $sortBy = 'name';
+
+        if (!in_array($sortDir, $allowedDir, true))
+            $sortDir = 'asc';
+
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.addresses', 'a')->addSelect('a')
+            ->leftJoin('p.bankAccount', 'b')->addSelect('b');
+
+        if ($filterName)
+        {
+            $qb->andWhere('p.name LIKE :filter')
+            ->setParameter('filter', "%$filterName%");
+        }
+
+        $qb->orderBy("p.$sortBy", $sortDir)
+        ->addOrderBy('a.id', 'ASC');
+
+        return $qb->getQuery()->getResult();
     }
-
-    $allowedSorts = ['name', 'email', 'birthdate', 'city'];
-    $allowedDir = ['asc', 'desc'];
-    if (!in_array($sortBy, $allowedSorts)) $sortBy = 'name';
-    if (!in_array($sortDir, $allowedDir)) $sortDir = 'asc';
-
-    // Gestion du tri selon la colonne choisie
-    if ($sortBy === 'city') {
-        // Ici tu tries sur la première adresse associée à la personne
-        $qb->orderBy('a.city', $sortDir);
-    } else {
-        $qb->orderBy('p.' . $sortBy, $sortDir);
-    }
-
-    return $qb->getQuery()->getResult();
-}
-
 }
