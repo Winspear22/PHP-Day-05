@@ -10,6 +10,7 @@ use Doctrine\DBAL\Connection;
 use App\Service\UserReadService;
 use App\Service\UserDeleteService;
 use App\Service\TableCreatorService;
+use App\Service\DataDeleteServiceSQL;
 use App\Service\DataInsertServiceSQL;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,11 +29,11 @@ final class Ex10Controller extends AbstractController
      */
     public function index(UserReadService $userReadService, Connection $connection, TableCreatorService $tableCreator): Response
     {
-        $form = $this->createUserForm();
+        $form = $this->createDataForm();
         try
         {
-            $tableCreator->createTable($connection, 'users_ex10');
-            $users = $userReadService->getAllUsers($connection, 'users_ex10');
+            $tableCreator->createTable($connection, 'ex10_data_sql');
+            $users = $userReadService->getAllUsers($connection, 'ex10_data_sql');
         }
         catch (RuntimeException $e)
         {
@@ -84,37 +85,13 @@ final class Ex10Controller extends AbstractController
     }
 
     /**
-     * @Route("/ex10/read_user", name="ex10_read_user", methods={"GET"})
+     * @Route("/ex10/delete_data_sql/{id}", name="ex10_delete_data_sql", methods={"POST"})
      */
-    public function readUser(Connection $connection, UserReadService $userReadService): Response
+    public function deleteDataSQL(DataDeleteServiceSQL $dataDeleteService, Connection $connection, int $id): Response
     {
         try
         {
-            $users = $userReadService->getAllUsers($connection, 'users_ex10');
-        }
-        catch (RuntimeException $e)
-        {
-            $this->addFlash('danger', $e->getMessage());
-            $users = [];
-        }
-        catch (Throwable $e)
-        {
-            $this->addFlash('danger', 'Error, unexpected error while reading users: ' . $e->getMessage());
-            $users = [];
-        }
-        return $this->render('ex10/index.html.twig', [
-            'users' => $users
-        ]);
-    }
-
-    /**
-     * @Route("/ex10/delete_user/{id}", name="ex10_delete_user", methods={"POST"})
-     */
-    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id): Response
-    {
-        try
-        {
-            $result = $userDeleteService->deleteUser($connection, 'users_ex10', $id);
+            $result = $dataDeleteService->deleteData($connection, 'users_ex10', $id);
             [$type, $msg] = explode(':', $result, 2);
             $this->addFlash($type, $msg);
             return $this->redirectToRoute('ex10_index');
