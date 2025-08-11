@@ -1,16 +1,5 @@
-ex13_index:
-    path: /ex13
-    controller: App\Controller\Ex13Controller::index
-
-ex13_create:
-    path: /ex13/create
-    controller: App\Controller\Ex13Controller::create
-
-ex13_update:
-    path: /ex13/update/{id}
-    controller: App\Controller\Ex13Controller::update
-
-ex13_delete:
-    path: /ex13/delete/{id}
-    controller: App\Controller\Ex13Controller::delete
-    methods: POST
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
