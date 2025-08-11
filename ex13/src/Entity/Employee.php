@@ -8,6 +8,8 @@ use App\Repository\EmployeeRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]
 class Employee
@@ -23,6 +25,8 @@ class Employee
     #[ORM\Column(length: 60)]
     private ?string $lastname = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Email]
     #[ORM\Column(length: 100, unique: true)]
     private ?string $email = null;
 
@@ -48,6 +52,7 @@ class Employee
     private ?PositionEnum $position = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'employees')]
+    #[ORM\JoinColumn(onDelete: "SET NULL")]
     private ?self $manager = null;
 
     /**
