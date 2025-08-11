@@ -1,20 +1,84 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello Ex13Controller!{% endblock %}
+{% block title %}Ex13 - Gestion des employés{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+<h1>Ex13 - Gestion des employés</h1>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+{# Affichage des messages flash #}
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }}">{{ message }}</div>
+    {% endfor %}
+{% endfor %}
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/home/adnen/Desktop/Day-05/ex13/src/Controller/Ex13Controller.php</code></li>
-        <li>Your template at <code>/home/adnen/Desktop/Day-05/ex13/templates/ex13/index.html.twig</code></li>
-    </ul>
-</div>
+{#{% for error in form.vars.errors %}
+    <div class="alert alert-danger">{{ error.message }}</div>
+{% endfor %}#}
+
+{# Formulaire d'ajout d'un employé #}
+{{ form_start(form, { 'action': path('ex13_index'), 'method': 'POST' }) }}
+    {{ form_widget(form) }}
+    <button type="submit">Ajouter</button>
+{{ form_end(form) }}
+
+<hr>
+
+{# Tableau des employés #}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Prénom</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Actif</th>
+            <th>Date de naissance</th>
+            <th>Embauché depuis</th>
+            <th>Embauché jusqu'à</th>
+            <th>Heures</th>
+            <th>Salaire</th>
+            <th>Poste</th>
+            <th>Manager</th>
+            <th>Modifier</th>
+            <th>Supprimer</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for employee in employees %}
+            <tr>
+                <td>{{ employee.id }}</td>
+                <td>{{ employee.firstname }}</td>
+                <td>{{ employee.lastname }}</td>
+                <td>{{ employee.email }}</td>
+                <td>{{ employee.active ? 'Oui' : 'Non' }}</td>
+                <td>{{ employee.birthdate ? employee.birthdate|date('Y-m-d') : '' }}</td>
+                <td>{{ employee.employedSince ? employee.employedSince|date('Y-m-d') : '' }}</td>
+                <td>{{ employee.employedUntil ? employee.employedUntil|date('Y-m-d') : '' }}</td>
+                <td>{{ employee.hours ? employee.hours.value : '' }}</td>
+                <td>{{ employee.salary }}</td>
+                <td>{{ employee.position ? employee.position.value : '' }}</td>
+                <td>
+                    {% if employee.manager %}
+                        {{ employee.manager.firstname }} {{ employee.manager.lastname }}
+                    {% else %}
+                        Aucun
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="get" action="{{ path('ex13_update', {'id': employee.id}) }}" style="display:inline;">
+                        <button type="submit">Modifier</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" action="{{ path('ex13_delete', {'id': employee.id}) }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Supprimer l\'employé #{{ employee.id }} ?')">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="14">Aucun employé.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Modifier l'utilisateur{% endblock %}
+{% block title %}Modifier l'employé{% endblock %}
 
 {% block body %}
-    <h1>Modifier l'utilisateur n°{{ user.id }}</h1>
+    <h1>Modifier l'employé n°{{ employee.id }}</h1>
 
     {% for label, messages in app.flashes %}
         {% for message in messages %}

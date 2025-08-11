@@ -2,16 +2,19 @@
 
 namespace App\Entity;
 
+use DateTime;
 use App\Enum\HoursEnum;
 use App\Enum\PositionEnum;
-use App\Repository\EmployeeRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\EmployeeRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\Validator\Constraints as Assert;
-
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]
+#[ORM\Table(name: "ex13_employees")]
+#[Assert\Callback('validateDates')]
 class Employee
 {
     #[ORM\Id]
@@ -232,4 +235,37 @@ class Employee
 
         return $this;
     }
+
+    public static function validateDates(self $employee, ExecutionContextInterface $context): void
+    {
+        $birthdate = $employee->getBirthdate();
+        $employedSince = $employee->getEmployedSince();
+        $employedUntil = $employee->getEmployedUntil();
+
+        if (!$birthdate || !$employedSince)
+            return; // Skip if dates not set
+
+        // 1. Age minimum 18 ans
+        $minAgeDate = (clone $birthdate)->modify('+18 years');
+        if ($employedSince < $minAgeDate) {
+            $context->buildViolation('Error. Employee must be at least 18 years old to be hired.')
+                ->atPath('employed_since')
+                ->addViolation();
+        }
+
+        // 2. Embauche pas avant 18 ans
+        if ($birthdate > (clone $employedSince)->modify('-18 years')) {
+            $context->buildViolation('Error. Hire date cannot be before employee turns 18.')
+                ->atPath('employed_since')
+                ->addViolation();
+        }
+
+        // 3. Contrat minimum 24h
+        if ($employedUntil && $employedUntil < (clone $employedSince)->modify('+1 day')) {
+            $context->buildViolation('Error. Contract end date must be at least 24 hours after hire date.')
+                ->atPath('employed_until')
+                ->addViolation();
+        }
+    }
+
 }
