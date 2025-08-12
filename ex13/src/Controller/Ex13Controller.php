@@ -358,7 +358,7 @@ public function delete(
                 'choice_label' => fn(Employee $e) => $e->getFirstname() . ' ' . $e->getLastname(),
                 'placeholder' => 'Select a manager',
                 'required' => false,
-                'disabled' => ($employee->getPosition() === PositionEnum::CEO) 
+                'disabled' => in_array($employee->getPosition(), [PositionEnum::CEO, PositionEnum::COO]) // 🔹 Désactiver si CEO ou COO
             ])
 ->add('position', ChoiceType::class, [
     'label' => 'Position',
@@ -374,7 +374,7 @@ public function delete(
         'QA Tester' => PositionEnum::QA_TESTER,
     ],
     'placeholder' => 'Select position',
-    'disabled' => ($employee->getId() && $employee->getPosition() === PositionEnum::CEO) // 🔹 Désactiver si CEO
+    'disabled' => ($employee->getId() && in_array($employee->getPosition(), [PositionEnum::CEO, PositionEnum::COO])) // 🔹 Désactiver si CEO ou COO déjà créé
 ])
             ->getForm();
     }
