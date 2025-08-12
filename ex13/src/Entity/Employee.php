@@ -236,80 +236,90 @@ class Employee
         return $this;
     }
 
-public static function validateDates(self $employee, ExecutionContextInterface $context): void
-{
-    $birthdate      = $employee->getBirthdate();
-    $employedSince  = $employee->getEmployedSince();
-    $employedUntil  = $employee->getEmployedUntil();
+    public static function validateDates(self $employee, ExecutionContextInterface $context): void
+    {
+        $birthdate      = $employee->getBirthdate();
+        $employedSince  = $employee->getEmployedSince();
+            $employedUntil  = $employee->getEmployedUntil();
 
     // Garde-fou : si un champ date n'est pas un DateTime valide (transfo échouée, etc.)
-    foreach (['birthdate' => $birthdate, 'employed_since' => $employedSince, 'employed_until' => $employedUntil] as $field => $value) {
-        if ($value !== null && !($value instanceof \DateTimeInterface)) {
-            $context->buildViolation('Invalid date.')
-                ->atPath($field)
-                ->addViolation();
-            // on continue pour signaler les autres problèmes éventuels
+        foreach (['birthdate' => $birthdate, 'employed_since' => $employedSince, 'employed_until' => $employedUntil] as $field => $value) {
+            if ($value !== null && !($value instanceof \DateTimeInterface)) {
+                $context->buildViolation('Invalid date.')
+                    ->atPath($field)
+                    ->addViolation();
+                // on continue pour signaler les autres problèmes éventuels
+            }
         }
-    }
 
-    // Si pas de dates minimales, on s’arrête là (le reste des règles attend au moins naissance + début)
-    if (!$birthdate || !$employedSince)
-        return;
+        // Si pas de dates minimales, on s’arrête là (le reste des règles attend au moins naissance + début)
+        if (!$birthdate || !$employedSince)
+            return;
 
-    $today   = new DateTime('today');
-    $minDate = new DateTime('1945-01-01 00:00:00');
-    $maxDate = new DateTime('2045-12-31 23:59:59');
+        $today   = new DateTime('today');
+        $minDate = new DateTime('1945-01-01');
+        $maxDate = new DateTime('2045-12-31');
 
-    // 0) Naissance dans la plage 1945 ... aujourd’hui
-    if ($birthdate < $minDate || $birthdate > $today)
-    {
-        $context->buildViolation('Birthdate must be between January 1, 1945 and today.')
-            ->atPath('birthdate')
-            ->addViolation();
-    }
-
-    // 1) L’employé doit être né avant son embauche
-    if ($employedSince < $birthdate)
-    {
-        $context->buildViolation('Error. Hire date cannot be before birth date.')
-            ->atPath('employed_since')
-            ->addViolation();
-    }
-
-    // 2) L’employé doit avoir au moins 18 ans à l’embauche
-    $minHireDate = (new DateTime($birthdate->format('Y-m-d H:i:s')))->modify('+18 years');
-    if ($employedSince < $minHireDate)
-    {
-        $context->buildViolation('Error. Employee must be at least 18 years old to be hired.')
-            ->atPath('employed_since')
-            ->addViolation();
-    }
-
-    // 3) Embauche dans la plage 1945 ... 2045
-    if ($employedSince < $minDate || $employedSince > $maxDate)
-    {
-        $context->buildViolation('Employment start date must be between January 1, 1945 and December 31, 2045.')
-            ->atPath('employed_since')
-            ->addViolation();
-    }
-
-    // 4) Fin de contrat : au moins +24h et dans la plage 1945 ... 2045
-    if ($employedUntil)
-    {
-        if ($employedUntil < (new DateTime($employedSince->format('Y-m-d H:i:s')))->modify('+1 day'))
+        foreach (['birthdate' => $birthdate, 'employed_since' => $employedSince, 'employed_until' => $employedUntil] as $field => $date)
         {
-            $context->buildViolation('Error. Contract end date must be at least 24 hours after hire date.')
-                ->atPath('employed_until')
+            if ($date !== null && ($date < $minDate || $date > $maxDate))
+            {
+                $context->buildViolation("Error. $field must be between 1945 and 2045.")
+                    ->atPath($field)
+                    ->addViolation();
+            }
+        }
+
+        // 0) Naissance dans la plage 1945 ... aujourd’hui
+        if ($birthdate < $minDate || $birthdate > $today)
+        {
+            $context->buildViolation('Birthdate must be between January 1, 1945 and today.')
+                ->atPath('birthdate')
                 ->addViolation();
         }
-        if ($employedUntil < $minDate || $employedUntil > $maxDate)
+
+        // 1) L’employé doit être né avant son embauche
+        if ($employedSince < $birthdate)
         {
-            $context->buildViolation('Employment end date must be between January 1, 1945 and December 31, 2045.')
-                ->atPath('employed_until')
+            $context->buildViolation('Error. Hire date cannot be before birth date.')
+                ->atPath('employed_since')
                 ->addViolation();
+        }
+
+        // 2) L’employé doit avoir au moins 18 ans à l’embauche
+        $minHireDate = (new DateTime($birthdate->format('Y-m-d H:i:s')))->modify('+18 years');
+        if ($employedSince < $minHireDate)
+        {
+            $context->buildViolation('Error. Employee must be at least 18 years old to be hired.')
+                ->atPath('employed_since')
+                ->addViolation();
+        }
+
+        // 3) Embauche dans la plage 1945 ... 2045
+        if ($employedSince < $minDate || $employedSince > $maxDate)
+        {
+            $context->buildViolation('Employment start date must be between January 1, 1945 and December 31, 2045.')
+                ->atPath('employed_since')
+                ->addViolation();
+        }
+
+        // 4) Fin de contrat : au moins +24h et dans la plage 1945 ... 2045
+        if ($employedUntil)
+        {
+            if ($employedUntil < (new DateTime($employedSince->format('Y-m-d H:i:s')))->modify('+1 day'))
+            {
+                $context->buildViolation('Error. Contract end date must be at least 24 hours after hire date.')
+                    ->atPath('employed_until')
+                    ->addViolation();
+            }
+            if ($employedUntil < $minDate || $employedUntil > $maxDate)
+            {
+                $context->buildViolation('Employment end date must be between January 1, 1945 and December 31, 2045.')
+                    ->atPath('employed_until')
+                    ->addViolation();
+            }
         }
     }
-}
 
 
 
