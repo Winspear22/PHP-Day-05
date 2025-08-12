@@ -108,7 +108,7 @@ public function update(
         return $this->redirectToRoute('ex13_index');
     }
 
-    $form = $this->createEmployeeForm($employee);
+    $form = $this->updateEmployeeForm($employee);
     $form->handleRequest($request);
 
     if ($form->isSubmitted()) {
@@ -255,21 +255,22 @@ public function delete(
                 'placeholder' => 'Select a manager',
                 'required' => false,
             ])
-            ->add('position', ChoiceType::class, [
-                'label' => 'Position',
-                'choices' => [
-                    'Manager' => PositionEnum::MANAGER,
-                    'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
-                    'QA Manager' => PositionEnum::QA_MANAGER,
-                    'Dev Manager' => PositionEnum::DEV_MANAGER,
-                    'CEO' => PositionEnum::CEO,
-                    'COO' => PositionEnum::COO,
-                    'Backend Dev' => PositionEnum::BACKEND_DEV,
-                    'Frontend Dev' => PositionEnum::FRONTEND_DEV,
-                    'QA Tester' => PositionEnum::QA_TESTER,
-                ],
-                'placeholder' => 'Select position'
-            ])
+->add('position', ChoiceType::class, [
+    'label' => 'Position',
+    'choices' => [
+        'Manager' => PositionEnum::MANAGER,
+        'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
+        'QA Manager' => PositionEnum::QA_MANAGER,
+        'Dev Manager' => PositionEnum::DEV_MANAGER,
+        'CEO' => PositionEnum::CEO,
+        'COO' => PositionEnum::COO,
+        'Backend Dev' => PositionEnum::BACKEND_DEV,
+        'Frontend Dev' => PositionEnum::FRONTEND_DEV,
+        'QA Tester' => PositionEnum::QA_TESTER,
+    ],
+    'placeholder' => 'Select position',
+    // Pas de disable ici car c'est la création
+])
             ->getForm();
     }
 
@@ -351,21 +352,22 @@ public function delete(
                 'placeholder' => 'Select a manager',
                 'required' => false,
             ])
-            ->add('position', ChoiceType::class, [
-                'label' => 'Position',
-                'choices' => [
-                    'Manager' => PositionEnum::MANAGER,
-                    'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
-                    'QA Manager' => PositionEnum::QA_MANAGER,
-                    'Dev Manager' => PositionEnum::DEV_MANAGER,
-                    'CEO' => PositionEnum::CEO,
-                    'COO' => PositionEnum::COO,
-                    'Backend Dev' => PositionEnum::BACKEND_DEV,
-                    'Frontend Dev' => PositionEnum::FRONTEND_DEV,
-                    'QA Tester' => PositionEnum::QA_TESTER,
-                ],
-                'placeholder' => 'Select position'
-            ])
+->add('position', ChoiceType::class, [
+    'label' => 'Position',
+    'choices' => [
+        'Manager' => PositionEnum::MANAGER,
+        'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
+        'QA Manager' => PositionEnum::QA_MANAGER,
+        'Dev Manager' => PositionEnum::DEV_MANAGER,
+        'CEO' => PositionEnum::CEO,
+        'COO' => PositionEnum::COO,
+        'Backend Dev' => PositionEnum::BACKEND_DEV,
+        'Frontend Dev' => PositionEnum::FRONTEND_DEV,
+        'QA Tester' => PositionEnum::QA_TESTER,
+    ],
+    'placeholder' => 'Select position',
+    'disabled' => ($employee->getId() && $employee->getPosition() === PositionEnum::CEO) // 🔹 Désactiver si CEO
+])
             ->getForm();
     }
 

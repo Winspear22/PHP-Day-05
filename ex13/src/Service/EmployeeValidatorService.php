@@ -16,54 +16,59 @@ class EmployeeValidatorService
         $this->employeeRepository = $employeeRepository;
     }
 
-public function validateCEO(Employee $employee, ?ExecutionContextInterface $context = null): array
-{
-    $errors = [];
+    public function validateCEO(Employee $employee, ?ExecutionContextInterface $context = null): array
+    {
+        $errors = [];
 
-    // 1. Le premier employé doit être le CEO
-    if ($employee->getId() === null && $this->employeeRepository->count([]) === 0) {
-        if ($employee->getPosition() !== PositionEnum::CEO) {
-            $errors[] = 'The first employee must be the CEO.';
-            $this->addViolation($context, 'position', end($errors));
+        // 1. Le premier employé doit être le CEO
+        if ($employee->getId() === null && $this->employeeRepository->count([]) === 0) {
+            if ($employee->getPosition() !== PositionEnum::CEO) {
+                $errors[] = 'The first employee must be the CEO.';
+                $this->addViolation($context, 'position', end($errors));
+            }
         }
+
+        // 2. Un CEO ne peut pas avoir de manager
+        if ($employee->getPosition() === PositionEnum::CEO && $employee->getManager() !== null) {
+            $errors[] = 'The CEO cannot have a manager.';
+            $this->addViolation($context, 'manager', end($errors));
+        }
+
+        // 3. Un seul CEO dans l’entreprise
+        if ($employee->getPosition() === PositionEnum::CEO) {
+            $existingCEO = $this->employeeRepository->findOneBy(['position' => PositionEnum::CEO]);
+            if ($existingCEO && $existingCEO->getId() !== $employee->getId()) {
+                $errors[] = 'There can only be one CEO in the company.';
+                $this->addViolation($context, 'position', end($errors));
+            }
+        }
+
+        // 4. Bloquer le changement de rôle si c'est l'actuel CEO
+        $currentCEO = $this->employeeRepository->findOneBy(['position' => PositionEnum::CEO]);
+        if ($currentCEO && $currentCEO->getId() === $employee->getId()) {
+            if ($employee->getPosition() !== PositionEnum::CEO) {
+                $errors[] = 'The CEO position cannot be changed.';
+                $this->addViolation($context, 'position', end($errors));
+            }
+        }
+
+        return $errors;
     }
-
-    // 2. Un CEO ne peut pas avoir de manager
-    if ($employee->getPosition() === PositionEnum::CEO && $employee->getManager() !== null) {
-        $errors[] = 'The CEO cannot have a manager.';
-        $this->addViolation($context, 'manager', end($errors));
-    }
-
-// 3. Un seul CEO dans l’entreprise (seulement si on essaie d'ajouter un nouveau CEO)
-if ($employee->getPosition() === PositionEnum::CEO) {
-    $existingCEO = $this->employeeRepository->findOneBy(['position' => PositionEnum::CEO]);
-    if ($existingCEO && $existingCEO->getId() !== $employee->getId()) {
-        $errors[] = 'There can only be one CEO in the company.';
-        $this->addViolation($context, 'position', end($errors));
-    }
-}
-
-    return $errors;
-}
-
-
 
     /**
      * Vérifie si le CEO peut être supprimé.
      */
-public function canDeleteCEO(Employee $employee): bool
-{
-    // Vérifier qui est le CEO actuel
-    $currentCEO = $this->employeeRepository->findOneBy(['position' => PositionEnum::CEO]);
+    public function canDeleteCEO(Employee $employee): bool
+    {
+        $currentCEO = $this->employeeRepository->findOneBy(['position' => PositionEnum::CEO]);
 
-    if ($currentCEO && $currentCEO->getId() === $employee->getId()) {
-        $totalEmployees = $this->employeeRepository->count([]);
-        return $totalEmployees <= 1; // Suppression possible seulement s'il est le dernier employé
+        if ($currentCEO && $currentCEO->getId() === $employee->getId()) {
+            $totalEmployees = $this->employeeRepository->count([]);
+            return $totalEmployees <= 1; // Suppression possible seulement s'il est le dernier employé
+        }
+
+        return true; // Pas le CEO, suppression autorisée
     }
-
-    return true; // Pas le CEO, suppression autorisée
-}
-
 
     private function addViolation(?ExecutionContextInterface $context, string $field, string $message): void
     {
