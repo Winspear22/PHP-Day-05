@@ -59,6 +59,8 @@ public function index(
             $errors = array_merge($errors, $employeeValidator->validateCEO($employee));
             $errors = array_merge($errors, $employeeValidator->validateCOO($employee));
             $errors = array_merge($errors, $employeeValidator->validateManagers($employee));
+            $errors = array_merge($errors, $employeeValidator->validateStaff($employee));
+            $errors = array_merge($errors, $employeeValidator->validatePromotions($employee));
 
             if (!empty($errors)) {
                 foreach ($errors as $err) {
@@ -127,6 +129,8 @@ public function update(
             $errors = array_merge($errors, $employeeValidator->validateCEO($employee));
             $errors = array_merge($errors, $employeeValidator->validateCOO($employee));
             $errors = array_merge($errors, $employeeValidator->validateManagers($employee));
+            $errors = array_merge($errors, $employeeValidator->validateStaff($employee));
+            $errors = array_merge($errors, $employeeValidator->validatePromotions($employee));
 
             if (!empty($errors)) {
                 foreach ($errors as $err) {

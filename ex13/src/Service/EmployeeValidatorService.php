@@ -32,6 +32,10 @@ class EmployeeValidatorService
         // Managers
         $errors = array_merge($errors, $this->validateManagers($employee, $context));
 
+		$errors = array_merge($errors, $this->validateStaff($employee, $context));
+		$errors = array_merge($errors, $this->validatePromotions($employee, $context));
+
+
         return $errors;
     }
 
@@ -155,19 +159,135 @@ class EmployeeValidatorService
         return $errors;
     }
 
-    /**
-     * Qui peut manager qui ?
-     */
-    private function canManagePosition(PositionEnum $managerPosition, PositionEnum $employeePosition): bool
-    {
-        return match ($managerPosition) {
-            PositionEnum::QA_MANAGER => $employeePosition === PositionEnum::QA_TESTER,
-            PositionEnum::DEV_MANAGER => in_array($employeePosition, [PositionEnum::FRONTEND_DEV, PositionEnum::BACKEND_DEV], true),
-            PositionEnum::MANAGER => in_array($employeePosition, [PositionEnum::QA_TESTER, PositionEnum::FRONTEND_DEV, PositionEnum::BACKEND_DEV], true),
-            PositionEnum::ACCOUNT_MANAGER => false,
-            default => false
-        };
+/**
+ * Règles pour les employés techniques et QA (staff)
+ */
+public function validateStaff(Employee $employee, ?ExecutionContextInterface $context = null): array
+{
+    $errors = [];
+
+    // 1. Backend & Frontend Dev => uniquement Dev Manager ou Manager
+    if (in_array($employee->getPosition(), [PositionEnum::BACKEND_DEV, PositionEnum::FRONTEND_DEV], true)) {
+        $allowedManagers = [PositionEnum::DEV_MANAGER, PositionEnum::MANAGER];
+        if (!in_array($employee->getManager()?->getPosition(), $allowedManagers, true)) {
+            $errors[] = sprintf(
+                '%s can only be managed by a Dev Manager or a Manager.',
+                ucfirst(str_replace('_', ' ', $employee->getPosition()->value))
+            );
+            $this->addViolation($context, 'manager', end($errors));
+        }
     }
+
+    // 2. QA Tester => uniquement QA Manager ou Manager
+    if ($employee->getPosition() === PositionEnum::QA_TESTER) {
+        $allowedManagers = [PositionEnum::QA_MANAGER, PositionEnum::MANAGER];
+        if (!in_array($employee->getManager()?->getPosition(), $allowedManagers, true)) {
+            $errors[] = 'QA Tester can only be managed by a QA Manager or a Manager.';
+            $this->addViolation($context, 'manager', end($errors));
+        }
+    }
+
+    // 4. Aucun staff ne peut être managé par un Account Manager
+    if ($employee->getManager()?->getPosition() === PositionEnum::ACCOUNT_MANAGER) {
+        $errors[] = 'Staff members cannot be managed by an Account Manager.';
+        $this->addViolation($context, 'manager', end($errors));
+    }
+
+    return $errors;
+}
+
+/**
+ * Règles de promotion pour le staff
+ */
+public function validatePromotions(Employee $employee, ?ExecutionContextInterface $context = null): array
+{
+    $errors = [];
+
+    $original = null;
+    if ($employee->getId()) {
+        $original = $this->employeeRepository->find($employee->getId());
+    }
+
+    // Vérifie seulement si c'est une modification de poste
+    if ($original && $employee->getPosition() !== $original->getPosition()) {
+
+        // 🚫 Interdiction de toute rétrogradation
+        $hierarchy = [
+            PositionEnum::CEO => 5,
+            PositionEnum::COO => 4,
+            PositionEnum::MANAGER => 3,
+            PositionEnum::DEV_MANAGER => 3,
+            PositionEnum::QA_MANAGER => 3,
+            PositionEnum::ACCOUNT_MANAGER => 3,
+            PositionEnum::BACKEND_DEV => 2,
+            PositionEnum::FRONTEND_DEV => 2,
+            PositionEnum::QA_TESTER => 2
+        ];
+
+if (
+    isset($hierarchy[$employee->getPosition()?->value], $hierarchy[$original->getPosition()?->value]) &&
+    $hierarchy[$employee->getPosition()->value] < $hierarchy[$original->getPosition()->value]
+) {
+    $errors[] = 'Demotion is not allowed.';
+    $this->addViolation($context, 'position', end($errors));
+    return $errors; // on bloque tout de suite
+}
+
+
+        // Si c'était un dev, il ne peut devenir que Dev Manager
+        if (in_array($original->getPosition(), [PositionEnum::BACKEND_DEV, PositionEnum::FRONTEND_DEV], true)) {
+            if ($employee->getPosition() !== PositionEnum::DEV_MANAGER) {
+                $errors[] = 'A developer can only be promoted to Dev Manager.';
+                $this->addViolation($context, 'position', end($errors));
+            } else {
+                // Promotion → manager passe au COO automatiquement
+                $coo = $this->employeeRepository->findOneBy(['position' => PositionEnum::COO]);
+                if ($coo) {
+                    $employee->setManager($coo);
+                }
+            }
+        }
+
+        // Si c'était un QA Tester, il ne peut devenir que QA Manager
+        if ($original->getPosition() === PositionEnum::QA_TESTER) {
+            if ($employee->getPosition() !== PositionEnum::QA_MANAGER) {
+                $errors[] = 'A QA Tester can only be promoted to QA Manager.';
+                $this->addViolation($context, 'position', end($errors));
+            } else {
+                // Promotion → manager passe au COO automatiquement
+                $coo = $this->employeeRepository->findOneBy(['position' => PositionEnum::COO]);
+                if ($coo) {
+                    $employee->setManager($coo);
+                }
+            }
+        }
+    }
+
+    return $errors;
+}
+
+
+/**
+ * Qui peut manager qui ?
+ */
+private function canManagePosition(PositionEnum $managerPosition, PositionEnum $employeePosition): bool
+{
+    return match ($managerPosition) {
+        // Managers spécialisés
+        PositionEnum::QA_MANAGER => $employeePosition === PositionEnum::QA_TESTER,
+        PositionEnum::DEV_MANAGER => in_array($employeePosition, [PositionEnum::FRONTEND_DEV, PositionEnum::BACKEND_DEV], true),
+
+        // Manager "généraliste"
+        PositionEnum::MANAGER => in_array($employeePosition, [PositionEnum::QA_TESTER, PositionEnum::FRONTEND_DEV, PositionEnum::BACKEND_DEV], true),
+
+        // Account Manager ne manage personne
+        PositionEnum::ACCOUNT_MANAGER => false,
+
+        // Par défaut, aucun management
+        default => false
+    };
+}
+
 
     /**
      * Suppression CEO
