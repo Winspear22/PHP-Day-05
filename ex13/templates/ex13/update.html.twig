@@ -5,24 +5,26 @@
 {% block body %}
 <h1>Modifier l'employé n°{{ employee.id }}</h1>
 
-{# Afficher uniquement les flashs #}
+{# Flash messages - mêmes catégories que sur index #}
 {% for msg in app.flashes('success') %}
     <div class="alert alert-success">{{ msg }}</div>
-{% endfor %}
-{% for msg in app.flashes('info') %}
-    <div class="alert alert-info">{{ msg }}</div>
-{% endfor %}
-{% for msg in app.flashes('danger') %}
-    <div class="alert alert-danger">{{ msg }}</div>
 {% endfor %}
 {% for msg in app.flashes('error') %}
     <div class="alert alert-danger">{{ msg }}</div>
 {% endfor %}
 
-{# On ne rend pas form_errors() #}
+{# Formulaire identique à index #}
 {{ form_start(form, { 'method': 'POST' }) }}
-    {{ form_widget(form) }}
+
+    {% for child in form %}
+        <div class="form-group">
+            {{ form_label(child) }}
+            {{ form_widget(child) }}
+        </div>
+    {% endfor %}
+
     <button type="submit">Enregistrer</button>
     <a href="{{ path('ex13_index') }}" class="btn btn-secondary" style="margin-left: 10px;">Annuler</a>
+
 {{ form_end(form) }}
 {% endblock %}

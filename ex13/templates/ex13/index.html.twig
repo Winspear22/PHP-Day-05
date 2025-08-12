@@ -12,10 +12,17 @@
     <div class="alert alert-danger">{{ msg }}</div>
 {% endfor %}
 
-{{ form_start(form) }}
-    {{ form_widget(form) }}
-    <button type="submit">Ajouter</button>
-{{ form_end(form) }}
+    {{ form_start(form) }}
+
+    {% for child in form %}
+        <div class="form-group">
+            {{ form_label(child) }}
+            {{ form_widget(child) }}
+        </div>
+    {% endfor %}
+
+    <button type="submit">Enregistrer</button>
+    {{ form_end(form) }}
 
 
 <hr>
