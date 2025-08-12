@@ -51,14 +51,19 @@ if ($employee->getPosition() === PositionEnum::CEO) {
     /**
      * Vérifie si le CEO peut être supprimé.
      */
-    public function canDeleteCEO(Employee $employee): bool
-    {
-        if ($employee->getPosition()?->value === 'CEO') {
-            $totalEmployees = $this->employeeRepository->count([]);
-            return $totalEmployees <= 1; // Suppression possible seulement si c'est le dernier employé
-        }
-        return true;
+public function canDeleteCEO(Employee $employee): bool
+{
+    // Vérifier qui est le CEO actuel
+    $currentCEO = $this->employeeRepository->findOneBy(['position' => PositionEnum::CEO]);
+
+    if ($currentCEO && $currentCEO->getId() === $employee->getId()) {
+        $totalEmployees = $this->employeeRepository->count([]);
+        return $totalEmployees <= 1; // Suppression possible seulement s'il est le dernier employé
     }
+
+    return true; // Pas le CEO, suppression autorisée
+}
+
 
     private function addViolation(?ExecutionContextInterface $context, string $field, string $message): void
     {
