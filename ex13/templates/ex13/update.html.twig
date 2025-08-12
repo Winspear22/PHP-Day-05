@@ -3,17 +3,26 @@
 {% block title %}Modifier l'employé{% endblock %}
 
 {% block body %}
-    <h1>Modifier l'employé n°{{ employee.id }}</h1>
+<h1>Modifier l'employé n°{{ employee.id }}</h1>
 
-    {% for label, messages in app.flashes %}
-        {% for message in messages %}
-            <div class="alert alert-{{ label }}">{{ message }}</div>
-        {% endfor %}
-    {% endfor %}
+{# Afficher uniquement les flashs #}
+{% for msg in app.flashes('success') %}
+    <div class="alert alert-success">{{ msg }}</div>
+{% endfor %}
+{% for msg in app.flashes('info') %}
+    <div class="alert alert-info">{{ msg }}</div>
+{% endfor %}
+{% for msg in app.flashes('danger') %}
+    <div class="alert alert-danger">{{ msg }}</div>
+{% endfor %}
+{% for msg in app.flashes('error') %}
+    <div class="alert alert-danger">{{ msg }}</div>
+{% endfor %}
 
-    {{ form_start(form, { 'method': 'POST' }) }}
-        {{ form_widget(form) }}
-        <button type="submit">Enregistrer</button>
-        <a href="{{ path('ex13_index') }}" class="btn btn-secondary" style="margin-left: 10px;">Annuler</a>
-    {{ form_end(form) }}
+{# On ne rend pas form_errors() #}
+{{ form_start(form, { 'method': 'POST' }) }}
+    {{ form_widget(form) }}
+    <button type="submit">Enregistrer</button>
+    <a href="{{ path('ex13_index') }}" class="btn btn-secondary" style="margin-left: 10px;">Annuler</a>
+{{ form_end(form) }}
 {% endblock %}

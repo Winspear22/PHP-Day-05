@@ -241,31 +241,42 @@ class Employee
         $birthdate = $employee->getBirthdate();
         $employedSince = $employee->getEmployedSince();
         $employedUntil = $employee->getEmployedUntil();
+        $todayDate = new DateTime();
 
         if (!$birthdate || !$employedSince)
-            return; // Skip if dates not set
+            return; // Skip si dates manquantes
+        if ($birthdate > $todayDate)
+        {
+            $context->buildViolation('Error. Birthdate cannot be in the future !')
+                ->atPath('birthdate')
+                ->addViolation();
+        }
 
-        // 1. Age minimum 18 ans
-        $minAgeDate = (clone $birthdate)->modify('+18 years');
-        if ($employedSince < $minAgeDate) {
+        // 1. L'employé doit être né avant son embauche
+        if ($employedSince < $birthdate)
+        {
+            $context->buildViolation('Error. Hire date cannot be before birth date.')
+                ->atPath('employed_since')
+                ->addViolation();
+        }
+
+        // 2. L'employé doit avoir au moins 18 ans à l'embauche
+        $minHireDate = (clone $birthdate)->modify('+18 years');
+        if ($employedSince < $minHireDate)
+        {
             $context->buildViolation('Error. Employee must be at least 18 years old to be hired.')
                 ->atPath('employed_since')
                 ->addViolation();
         }
 
-        // 2. Embauche pas avant 18 ans
-        if ($birthdate > (clone $employedSince)->modify('-18 years')) {
-            $context->buildViolation('Error. Hire date cannot be before employee turns 18.')
-                ->atPath('employed_since')
-                ->addViolation();
-        }
-
-        // 3. Contrat minimum 24h
-        if ($employedUntil && $employedUntil < (clone $employedSince)->modify('+1 day')) {
+        // 3. Contrat d'au moins 24h
+        if ($employedUntil && $employedUntil < (clone $employedSince)->modify('+1 day'))
+        {
             $context->buildViolation('Error. Contract end date must be at least 24 hours after hire date.')
                 ->atPath('employed_until')
                 ->addViolation();
         }
     }
+
 
 }

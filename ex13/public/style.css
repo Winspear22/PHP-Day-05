@@ -28,3 +28,22 @@
     color: #000000;
     border-left: 7px solid #d8db38;
 }
+
+/* Masquer les puces */
+ul li {
+    list-style: none;
+}
+
+/* Style identique aux alert-danger */
+ul li,
+ul li::marker {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 7px solid #e53e3e;
+    padding: 1em 1.5em;
+    margin: 1em 0;
+    border-radius: 5px;
+    font-weight: bold;
+    box-shadow: 0 1px 7px #aaa1;
+    font-size: 1em;
+}

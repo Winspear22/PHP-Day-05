@@ -5,26 +5,22 @@
 {% block body %}
 <h1>Ex13 - Gestion des employés</h1>
 
-{# Affichage des messages flash #}
-{% for label, messages in app.flashes %}
-    {% for message in messages %}
-        <div class="alert alert-{{ label }}">{{ message }}</div>
-    {% endfor %}
+{% for msg in app.flashes('success') %}
+    <div class="alert alert-success">{{ msg }}</div>
+{% endfor %}
+{% for msg in app.flashes('error') %}
+    <div class="alert alert-danger">{{ msg }}</div>
 {% endfor %}
 
-{#{% for error in form.vars.errors %}
-    <div class="alert alert-danger">{{ error.message }}</div>
-{% endfor %}#}
-
-{# Formulaire d'ajout d'un employé #}
-{{ form_start(form, { 'action': path('ex13_index'), 'method': 'POST' }) }}
+{{ form_start(form) }}
     {{ form_widget(form) }}
     <button type="submit">Ajouter</button>
 {{ form_end(form) }}
 
+
 <hr>
 
-{# Tableau des employés #}
+{# 3) Tableau des employés #}
 <table>
     <thead>
         <tr>
