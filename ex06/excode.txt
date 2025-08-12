@@ -1,0 +1,654 @@
+<?php
+
+namespace App\Controller;
+
+use DateTime;
+use Throwable;
+use RuntimeException;
+use DateTimeInterface;
+use Doctrine\DBAL\Connection;
+use App\Service\UserReadService;
+use App\Service\UserDeleteService;
+use App\Service\UserInsertService;
+use App\Service\UserUpdateService;
+use App\Service\TableCreatorService;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Validator\Constraints\LessThanOrEqual;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+final class Ex06Controller extends AbstractController
+{
+    /**
+     * @Route("/ex06", name="ex06_index")
+     */
+    public function index(UserReadService $userReadService, Connection $connection, TableCreatorService $tableCreator): Response
+    {
+        $form = $this->createUserForm();
+        try
+        {
+            $tableCreator->createTable($connection, 'users_ex06');
+            $users = $userReadService->getAllUsers($connection, 'users_ex06');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', "Error, database error: " . $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Error, unexpected error: " . $e->getMessage());
+            $users = [];
+        }
+        return $this->render('ex06/index.html.twig', [
+            'form' => $form->createView(),
+            'users' => $users
+        ]);
+    }
+
+
+    /**
+     * @Route("/ex06/insert_user", name="ex06_insert_user", methods={"POST"})
+     */
+    public function insertUser(Request $request, UserInsertService $userInsertService, Connection $connection): Response
+    {
+        try
+        {
+            $form = $this->createUserForm();
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid())
+            {
+                $data = $form->getData();
+                $result = $userInsertService->insertUser($connection, 'users_ex06', $data);
+                [$type, $msg] = explode(':', $result, 2);
+                $this->addFlash($type, $msg);
+                return $this->redirectToRoute('ex06_index');
+            }
+            else
+            {
+                $this->addFlash('danger', 'Error, invalid form!');
+                return $this->redirectToRoute('ex06_index');
+            }
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error, unexpected error while inserting user: ' . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
+        }
+    }
+
+    /**
+     * @Route("/ex06/read_user", name="ex06_read_user", methods={"GET"})
+     */
+    public function readUser(Connection $connection, UserReadService $userReadService): Response
+    {
+        try
+        {
+            $users = $userReadService->getAllUsers($connection, 'users_ex06');
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error, unexpected error while reading users: ' . $e->getMessage());
+            $users = [];
+        }
+        return $this->render('ex06/index.html.twig', [
+            'users' => $users
+        ]);
+    }
+
+    /**
+     * @Route("/ex06/delete_user/{id}", name="ex06_delete_user", methods={"POST"})
+     */
+    public function deleteUser(UserDeleteService $userDeleteService, Connection $connection, int $id): Response
+    {
+        try
+        {
+            $result = $userDeleteService->deleteUser($connection, 'users_ex06', $id);
+            [$type, $msg] = explode(':', $result, 2);
+            $this->addFlash($type, $msg);
+            return $this->redirectToRoute('ex06_index');
+
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Unexpected error while deleting user: " . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
+        }
+    }
+
+    /**
+     * @Route("/ex06/update_user/{id}", name="ex06_update_user", methods={"GET", "POST"})
+    */
+    public function updateUser(
+        int $id,
+        Request $request,
+        UserReadService $userReadService,
+        UserUpdateService $userUpdateService,
+        Connection $connection
+    ): Response
+    {
+        try
+        {
+            $user = $userReadService->getUserById($connection, 'users_ex06', $id);
+            if (!$user)
+            {
+                $this->addFlash('danger', "User $id does not exist.");
+                return $this->redirectToRoute('ex06_index');
+            }
+            if (isset($user['enable']))
+                $user['enable'] = (bool)$user['enable'];
+            if (isset($user['birthdate']) && !($user['birthdate'] instanceof DateTimeInterface))
+                $user['birthdate'] = new DateTime($user['birthdate']);
+            $form = $this->updateUserForm($user);
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid())
+            {
+                $data = $form->getData();
+                $result = $userUpdateService->updateUser($connection, 'users_ex06', $id, $data);
+                [$type, $msg] = explode(':', $result, 2);
+                $this->addFlash($type, $msg);
+                return $this->redirectToRoute('ex06_index');
+            }
+
+            return $this->render('ex06/edit.html.twig', [
+                'form' => $form->createView(),
+                'user' => $user,
+            ]);
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', "Error, the form creation had a problem : " . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Unexpected error while updating user: ' . $e->getMessage());
+            return $this->redirectToRoute('ex06_index');
+        }
+    }
+
+    private function createUserForm()
+    {
+        return $this->createFormBuilder()
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                ]),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
+            ])
+            ->getForm();
+    }
+
+    private function updateUserForm(array $user)
+    {
+        return $this->createFormBuilder($user)
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+                // Le champ sera coché ou non selon $user['enable']
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+                // Symfony convertit le champ automatiquement si la valeur du tableau $user est correcte (format 'Y-m-d H:i:s')
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                    ]),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
+            ])
+            ->getForm();
+    }
+
+
+}
+<?php
+
+namespace App\Service;
+
+use Exception;
+use Doctrine\DBAL\Connection;
+
+class TableCreatorService
+{
+    public function createTable(Connection $connection, string $tableName): string
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS $tableName (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(25) UNIQUE NOT NULL,
+            name VARCHAR(25) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            enable BOOLEAN NOT NULL DEFAULT 1,
+            birthdate DATETIME NOT NULL,
+            address LONGTEXT NOT NULL
+        )";
+        try
+        {
+            if ($this->checkTableExistence($connection, $tableName))
+                return "info:The table $tableName already exists and cannot be created again.";
+            $connection->executeStatement($sql);
+            return "success:Success! The table $tableName was created!";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error, there was a problem in the table $tableName creation : " . $e->getMessage();
+        }
+    }
+
+    private function checkTableExistence(Connection $connection, string $tableName): bool
+    {
+        try
+        {
+            $result = $connection->fetchOne("SHOW TABLES LIKE '$tableName'");
+            return ($result !== false);
+        }
+        catch (Exception $e)
+        {
+            return false;
+        }
+    }
+}
+<?php
+
+namespace App\Service;
+
+use Doctrine\DBAL\Connection;
+use Exception;
+
+class UserDeleteService
+{
+    public function deleteUser(Connection $connection, string $tableName, int $id): string
+    {
+        try
+        {
+			$exists = $connection->fetchOne("SELECT COUNT(*) FROM $tableName WHERE id = :id", ['id' => $id]);
+			if (!$exists)
+				return "danger:User $id does not exist.";
+            $connection->executeStatement("DELETE FROM $tableName WHERE id = :id", ['id' => $id]);
+            return "success:Success! User $id deleted.";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error while deleting user $id: " . $e->getMessage();
+        }
+    }
+}<?php
+
+namespace App\Service;
+
+use Exception;
+use DateTimeInterface;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+
+class UserInsertService
+{
+	public function insertUser(Connection $connection, string $tableName, array $data): string
+    {
+		$sql = "INSERT INTO $tableName (username, name, email, enable, birthdate, address)
+                VALUES (:username, :name, :email, :enable, :birthdate, :address)";
+        try
+        {
+            $connection->executeStatement($sql, [
+                'username'  => $data['username'],
+                'name'      => $data['name'],
+                'email'     => $data['email'],
+                'enable'    => $data['enable'] ? 1 : 0,
+				'birthdate' => $data['birthdate'] instanceof DateTimeInterface
+					? $data['birthdate']->format('Y-m-d H:i:s')
+					: $data['birthdate'],
+			'address'   => $data['address'],
+            ]);
+            return "success:Success! User {$data['username']} has been inserted into the table $tableName.";
+        }
+        catch (UniqueConstraintViolationException $e)
+        {
+            return "danger:Error - There is a duplicate entry ! Username or email already exists.";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error, there was a problem with the database or the table $tableName : " . $e->getMessage();
+        }
+    }
+}
+<?php
+
+namespace App\Service;
+
+use Exception;
+use Throwable;
+use RuntimeException;
+use Doctrine\DBAL\Connection;
+
+class UserReadService
+{
+	public function getAllUsers(Connection $connection, string $tableName): array
+	{
+		$sql = "SELECT * FROM $tableName";
+		try
+		{
+			return $connection->fetchAllAssociative($sql);
+		}
+		catch (Exception $e)
+		{
+			throw new RuntimeException("Error, we cannot display the user list, there was a problem in the table $tableName : " . $e->getMessage());
+		}
+	}
+	public function getUserById(Connection $connection, string $tableName, int $id): ?array
+	{
+		try
+		{
+			$user = $connection->fetchAssociative("SELECT * FROM $tableName WHERE id = :id", ['id' => $id]);
+			return $user ?: null;
+		}
+		catch (Throwable $e)
+		{
+			throw new RuntimeException('Error, we could not fetch the user, they probably do not exist : ' . $e->getMessage());
+		}
+	}
+
+}
+<?php
+
+namespace App\Service;
+
+use Exception;
+use TypeError;
+use DateTimeInterface;
+use Doctrine\DBAL\Connection;
+
+class UserUpdateService
+{
+    public function updateUser(Connection $connection, string $tableName, int $id, array $data): string
+    {
+        $sql = "UPDATE $tableName
+                SET username = :username,
+                    name = :name,
+                    email = :email,
+                    enable = :enable,
+                    birthdate = :birthdate,
+                    address = :address
+                WHERE id = :id";
+        try
+        {
+			$user = $connection->fetchOne("SELECT COUNT(*) FROM $tableName WHERE id = :id", ['id' => $id]);
+            if (!$user)
+                return "danger:Error - User $id does not exist in the table $tableName.";
+            $connection->executeStatement($sql, [
+                'username'  => $data['username'],
+                'name'      => $data['name'],
+                'email'     => $data['email'],
+                'enable'    => $data['enable'] ? 1 : 0,
+                'birthdate' => $data['birthdate'] instanceof DateTimeInterface
+                    ? $data['birthdate']->format('Y-m-d H:i:s')
+                    : $data['birthdate'],
+                'address'   => $data['address'],
+                'id'        => $id,
+            ]);
+            return "success:Success! User $id has been updated.";
+        }
+        catch (Exception $e)
+        {
+            $msg = $e->getMessage();
+            if (stripos($msg, 'Duplicate entry') !== false || stripos($msg, 'UNIQUE constraint failed') !== false)
+                return "danger:Error, duplicate entry! The username or the email already exists.";
+            if (stripos($msg, 'constraint') !== false || stripos($msg, 'violat') !== false)
+                return "danger:Error, database constraint violation: $msg";
+            if ($e instanceof TypeError)
+                return "danger:Type error: $msg";
+            return "danger:Error, we could not update the user, unexpected error: $msg";
+        }
+    }
+}
+?>ex06_index:
+    path: /ex06
+    controller: App\Controller\Ex06Controller::index
+    methods: [GET]
+
+ex06_insert_user:
+    path: /ex06/insert_user
+    controller: App\Controller\Ex06Controller::insertUser
+    methods: [POST]
+
+ex06_read_user:
+    path: /ex06/read_user
+    controller: App\Controller\Ex06Controller::readUser
+    methods: [GET]
+
+ex06_delete_user:
+    path: /ex06/delete_user/{id}
+    controller: App\Controller\Ex06Controller::deleteUser
+    methods: [POST]
+    requirements:
+        id: '\d+'
+
+ex06_update_user:
+    path: /ex06/update_user/{id}
+    controller: App\Controller\Ex06Controller::updateUser
+    methods: [GET, POST]
+    requirements:
+        id: '\d+'# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier l'utilisateur{% endblock %}
+
+{% block body %}
+    <h1>Modifier l'utilisateur n°{{ user.id }}</h1>
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {{ form_start(form, { 'method': 'POST' }) }}
+        {{ form_widget(form) }}
+        <button type="submit">Enregistrer</button>
+        <a href="{{ path('ex06_index') }}" class="btn btn-secondary" style="margin-left: 10px;">Annuler</a>
+    {{ form_end(form) }}
+{% endblock %}{% extends 'base.html.twig' %}
+
+{% block title %}Hello Ex06Controller!{% endblock %}
+
+{% block body %}
+<h1>Ex06 - SQL</h1>
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }}">{{ message }}</div>
+    {% endfor %}
+{% endfor %}
+
+{{ form_start(form, { 'action': path('ex06_insert_user'), 'method': 'POST' }) }}
+    {{ form_widget(form) }}
+    <button type="submit">Insérer</button>
+{{ form_end(form) }}
+
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Pseudo</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Enable</th>
+            <th>Date de naissance</th>
+            <th>Adresse</th>
+            <th>Update</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.enable ? 'Oui' : 'Non' }}</td>
+                <td>{{ user.birthdate|date('Y-m-d') }}</td>
+                <td>{{ user.address }}</td>
+                <td>
+                    <a href="{{ path('ex06_update_user', {'id': user.id}) }}">Update (GET)</a>
+                </td>
+                <td>
+                    <form method="post" action="{{ path('ex06_delete_user', {'id': user.id}) }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Delete user #{{ user.id }}?')">Delete (POST)</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="9">Aucun utilisateur.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+
+{% endblock %}
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    annotations: true
+    http_method_override: false
+    handle_all_throwables: true
+
+    # Enables session support. Note that the session will ONLY be started if you read or write from it.
+    # Remove or comment this section to explicitly disable session support.
+    session:
+        handler_id: null
+        cookie_secure: auto
+        cookie_samesite: lax
+
+    #esi: true
+    #fragments: true
+    php_errors:
+        log: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

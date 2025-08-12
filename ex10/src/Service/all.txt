@@ -1,0 +1,207 @@
+<?php 
+
+namespace App\Service;
+
+use App\Repository\Ex10OrmRecordsRepository;
+use Doctrine\ORM\EntityManagerInterface;
+
+class DataDeleteServiceORM
+{
+    private EntityManagerInterface $em;
+    private Ex10OrmRecordsRepository $repo;
+
+    public function __construct(EntityManagerInterface $em, Ex10OrmRecordsRepository $repo)
+    {
+        $this->em = $em;
+        $this->repo = $repo;
+    }
+
+    public function deleteRecordById(int $id): bool
+    {
+        $record = $this->repo->find($id);
+        if (!$record)
+            return false;
+        $this->em->remove($record);
+        $this->em->flush();
+        return true;
+    }
+}
+?><?php
+
+namespace App\Service;
+
+use Exception;
+use Doctrine\DBAL\Connection;
+
+class DataDeleteServiceSQL
+{
+    public function deleteRecord(Connection $connection, string $tableName, int $id): string
+    {
+        try
+        {
+            $exists = $connection->fetchOne("SELECT COUNT(*) FROM $tableName WHERE id = :id", ['id' => $id]);
+            if (!$exists)
+                return "danger:Error, data $id does not exist.";
+            $connection->executeStatement("DELETE FROM $tableName WHERE id = :id", ['id' => $id]);
+            return "success:Success! Data $id deleted.";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error while deleting data $id: " . $e->getMessage();
+        }
+    }
+}
+<?php
+
+namespace App\Service;
+
+use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\Ex10OrmRecords;
+
+class DataInsertServiceORM
+{
+    private EntityManagerInterface $em;
+
+    public function __construct(EntityManagerInterface $em)
+    {
+        $this->em = $em;
+    }
+
+    public function insertRecord(Ex10OrmRecords $record): void
+    {
+        $this->em->persist($record);
+        $this->em->flush();
+    }
+}
+
+?><?php
+
+namespace App\Service;
+
+use Exception;
+use Doctrine\DBAL\Connection;
+
+class DataInsertServiceSQL
+{
+    public function insertRecord(Connection $connection, string $tableName, string $data, \DateTimeInterface $date): string
+    {
+        $sql = "INSERT INTO $tableName (data, date) VALUES (:data, :date)";
+        try
+        {
+            $connection->executeStatement($sql, [
+                'data' => $data,
+                'date' => $date->format('Y-m-d H:i:s'),
+            ]);
+            return "success:Success! Data has been inserted into table $tableName.";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error, there was a problem inserting into table $tableName: " . $e->getMessage();
+        }
+    }
+}
+<?php
+
+namespace App\Service;
+
+use App\Entity\Ex10OrmRecords;
+use App\Repository\Ex10OrmRecordsRepository;
+
+class DataReadServiceORM
+{
+    private Ex10OrmRecordsRepository $recordRepository;
+
+    public function __construct(Ex10OrmRecordsRepository $recordRepository)
+    {
+        $this->recordRepository = $recordRepository;
+    }
+
+    public function getRecordById(int $id): ?Ex10OrmRecords
+    {
+        return $this->recordRepository->find($id);
+    }
+
+    public function getAllRecords(): array
+    {
+        return $this->recordRepository->findAll();
+    }
+}
+
+?><?php
+
+namespace App\Service;
+
+use Exception;
+use RuntimeException;
+use Doctrine\DBAL\Connection;
+
+class DataReadServiceSQL
+{
+    public function getAllRecords(Connection $connection, string $tableName): array
+    {
+        $sql = "SELECT * FROM $tableName ORDER BY id ASC";
+        try
+        {
+            return $connection->fetchAllAssociative($sql);
+        }
+        catch (Exception $e)
+        {
+            throw new RuntimeException("Error: Cannot display the data list for table $tableName: " . $e->getMessage());
+        }
+    }
+
+    public function getRecordById(Connection $connection, string $tableName, int $id): ?array
+    {
+        try
+        {
+            $record = $connection->fetchAssociative("SELECT * FROM $tableName WHERE id = :id", ['id' => $id]);
+            return $record ?: null;
+        }
+        catch (Exception $e)
+        {
+            throw new RuntimeException("Error: Could not fetch the record with id $id: " . $e->getMessage());
+        }
+    }
+}
+<?php
+
+namespace App\Service;
+
+use Exception;
+use Doctrine\DBAL\Connection;
+
+class TableCreatorServiceSQL
+{
+    public function createTable(Connection $connection, string $tableName): string
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS ex10_sql_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                data VARCHAR(255) NOT NULL,
+                date DATETIME NOT NULL
+            );";
+        try
+        {
+            if ($this->checkTableExistence($connection, $tableName))
+                return "info:The table $tableName already exists and cannot be created again.";
+            $connection->executeStatement($sql);
+            return "success:Success! The table $tableName was created!";
+        }
+        catch (Exception $e)
+        {
+            return "danger:Error, there was a problem in the table $tableName creation : " . $e->getMessage();
+        }
+    }
+
+    private function checkTableExistence(Connection $connection, string $tableName): bool
+    {
+        try
+        {
+            $result = $connection->fetchOne("SHOW TABLES LIKE '$tableName'");
+            return ($result !== false);
+        }
+        catch (Exception $e)
+        {
+            return false;
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+{% block title %}Add SQL Record{% endblock %}
+{% block body %}
+<h2>Add a record (SQL Table)</h2>
+
+{{ form_start(form) }}
+    {{ form_row(form.data) }}
+    <button type="submit" class="btn btn-success">Insert</button>
+    <a href="{{ path('ex10_index') }}" class="btn btn-secondary">Back</a>
+{{ form_end(form) }}
+
+{% endblock %}

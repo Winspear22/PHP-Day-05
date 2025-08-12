@@ -1,0 +1,520 @@
+<?php
+
+namespace App\Controller;
+
+use Throwable;
+use App\Entity\User;
+use RuntimeException;
+use App\Service\UserReadService;
+use App\Service\UserDeleteService;
+use App\Service\UserInsertService;
+use App\Service\UserUpdateService;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Validator\Constraints\LessThanOrEqual;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+final class Ex07Controller extends AbstractController
+{
+    /**
+     * @Route("/ex07", name="ex07_index", methods={"GET", "POST"})
+     */
+    public function index(
+        Request $request,
+        UserReadService $userReadService,
+        UserInsertService $userInsertService
+    ): Response
+    {
+        $user = new User();
+        $form = $this->createUserForm($user);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid())
+        {
+            try
+            {
+                $userInsertService->insertUser($user);
+                $this->addFlash('success', 'Success! User added successfully!');
+                return $this->redirectToRoute('ex07_index');
+            }
+            catch (UniqueConstraintViolationException $e)
+            {
+                $this->addFlash('danger', 'Error, email or username already in use !');
+            }
+            catch (Throwable $e)
+            {
+                $this->addFlash('danger', 'Error, unexpected error: ' . $e->getMessage());
+            }
+        }
+        try
+        {
+            $users = $userReadService->getAllUsers();
+        }
+        catch (RuntimeException $e)
+        {
+            $this->addFlash('danger', "Error, database error: " . $e->getMessage());
+            $users = [];
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', "Error, unexpected error: " . $e->getMessage());
+            $users = [];
+        }
+        return $this->render('ex07/index.html.twig', [
+            'form' => $form->createView(),
+            'users' => $users,
+        ]);
+    }
+
+    /**
+     * @Route("/ex07/delete/{id}", name="ex07_delete", methods={"POST"})
+     */
+    public function delete(int $id, UserDeleteService $deleteService): Response
+    {
+        try
+        {
+            $success = $deleteService->deleteUserById($id);
+            if ($success)
+                $this->addFlash('success', "Success! User was successfully deleted !");
+            else
+                $this->addFlash('danger', "Error, we could not find the user requested !");
+            return $this->redirectToRoute('ex07_index');
+        }
+        catch (Throwable $e)
+        {
+            $this->addFlash('danger', 'Error, unexpected error: ' . $e->getMessage());
+            return $this->redirectToRoute('ex07_index');
+        }
+    }
+
+    /**
+     * @Route("/ex07/update/{id}", name="ex07_update", methods={"GET", "POST"})
+     */
+    public function update(int $id, Request $request, UserReadService $userReadService, UserUpdateService $userUpdateService): Response
+    {
+        $user = $userReadService->getUserById($id);
+        if (!$user) {
+            $this->addFlash('danger', "User #$id does not exist.");
+            return $this->redirectToRoute('ex07_index');
+        }
+
+        $form = $this->updateUserForm($user);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $userUpdateService->updateUser($user);
+                $this->addFlash('success', "User #$id updated successfully!");
+                return $this->redirectToRoute('ex07_index');
+            } catch (Throwable $e) {
+                $this->addFlash('danger', 'Error updating user: ' . $e->getMessage());
+            }
+        }
+
+        return $this->render('ex07/update.html.twig', [
+            'form' => $form->createView(),
+            'user' => $user,
+        ]);
+    }
+
+        private function updateUserForm(User $user): FormInterface
+    {
+        return $this->createFormBuilder($user)
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                ]),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
+            ])
+            ->getForm();
+    }
+
+
+    private function createUserForm(User $user): FormInterface
+    {
+        return $this->createFormBuilder($user)
+            ->add('username', TextType::class, [
+                'label' => 'Username',
+                'constraints' => [
+                    new NotBlank(['message' => 'Username is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your username']
+            ])
+            ->add('name', TextType::class, [
+                'label' => 'Full name',
+                'constraints' => [
+                    new NotBlank(['message' => 'Name is required.']),
+                    new Length(['max' => 25, 'maxMessage' => 'Maximum 25 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 25, 'placeholder' => 'Your full name']
+            ])
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'constraints' => [
+                    new NotBlank(['message' => 'Email is required.']),
+                    new Email(['message' => 'Invalid email address.']),
+                    new Length(['max' => 255, 'maxMessage' => 'Maximum 255 characters allowed.']),
+                ],
+                'attr' => ['maxlength' => 255, 'placeholder' => 'email@example.com']
+            ])
+            ->add('enable', CheckboxType::class, [
+                'label' => 'Enabled?',
+                'required' => false,
+            ])
+            ->add('birthdate', DateTimeType::class, [
+                'label' => 'Birthdate',
+                'widget' => 'single_text',
+                'constraints' => [
+                    new NotBlank(['message' => 'Birthdate is required.']),
+                    new LessThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Birthdate cannot be in the future.'
+                    ]),
+                ],
+            ])
+            ->add('address', TextareaType::class, [
+                'label' => 'Address',
+                'constraints' => [
+                    new NotBlank(['message' => 'Address is required.']),
+                    new Length([
+                        'max' => 1000,
+                        'maxMessage' => 'Address cannot be longer than 1000 characters.',
+                ]),
+                ],
+                'attr' => ['rows' => 3, 'placeholder' => 'Your full address', 'maxlength' => 1000]
+            ])
+            ->getForm();
+    }
+}
+<?php
+
+namespace App\Service;
+
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Tools\SchemaTool;
+use Throwable;
+
+class TableCreatorService
+{
+    public function createTable(EntityManagerInterface $em, string $entityClass, string $tableName): string
+    {
+        try
+        {
+            $schemaManager = $em->getConnection()->createSchemaManager();
+            $schemaTool = new SchemaTool($em);
+            $metadata = [$em->getClassMetadata($entityClass)];
+
+            if ($schemaManager->tablesExist([$tableName]))
+                return "info:The table $tableName already exists.";
+            $schemaTool->createSchema($metadata);
+            return "success:Success! The table $tableName was created.";
+        }
+        catch (Throwable $e)
+        {
+            return "danger:Error, we could not create the table $tableName : " . $e->getMessage();
+        }
+    }
+    public function checkTableExistence(EntityManagerInterface $em, string $tableName): bool
+    {
+        try
+        {
+            $schemaManager = $em->getConnection()->createSchemaManager();
+            return $schemaManager->tablesExist([$tableName]);
+        }
+        catch (Throwable $e)
+        {
+            return false;
+        }
+    }
+}
+<?php 
+
+namespace App\Service;
+
+use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
+
+class UserDeleteService
+{
+    private $em;
+    private $repo;
+    public function __construct(EntityManagerInterface $em, 
+	UserRepository $repo)
+    {
+        $this->em = $em;
+        $this->repo = $repo;
+    }
+    public function deleteUserById(int $id): bool
+    {
+        $user = $this->repo->find($id);
+        if (!$user)
+            return false;
+        $this->em->remove($user);
+        $this->em->flush();
+        return true;
+    }
+}
+?><?php
+
+namespace App\Service;
+
+use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\User;
+
+class UserInsertService
+{
+    private $em;
+
+    public function __construct(EntityManagerInterface $em)
+    {
+        $this->em = $em;
+    }
+
+    public function insertUser(User $user): void
+    {
+        $this->em->persist($user);
+        $this->em->flush();
+    }
+}
+?><?php
+
+namespace App\Service;
+
+use App\Entity\User;
+use App\Repository\UserRepository;
+
+class UserReadService
+{
+    private $userRepository;
+
+    public function __construct(UserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
+
+    public function getUserById(int $id): ?User
+    {
+        return $this->userRepository->find($id);
+    }
+
+    public function getAllUsers(): array
+    {
+        return $this->userRepository->findAll();
+    }
+}
+?><?php 
+namespace App\Service;
+
+use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\User;
+
+class UserUpdateService
+{
+    private $em;
+    public function __construct(EntityManagerInterface $em)
+    {
+        $this->em = $em;
+    }
+
+    public function updateUser(User $user): void
+    {
+        $this->em->flush();
+	}
+}
+
+?>ex07_index:
+    path: /ex07
+    controller: App\Controller\Ex07Controller::index
+    methods: [GET, POST]
+
+ex07_delete:
+    path: /ex07/delete/{id}
+    controller: App\Controller\Ex07Controller::delete
+    methods: [POST]
+
+ex07_update:
+    path: /ex07/update/{id}
+    controller: App\Controller\Ex07Controller::update
+    methods: [GET, POST]
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+{% extends 'base.html.twig' %}
+
+{% block title %}Ex07 - ORM Update{% endblock %}
+
+{% block body %}
+<h1>Ex07 - ORM Update</h1>
+
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }}">{{ message }}</div>
+    {% endfor %}
+{% endfor %}
+
+{{ form_start(form, { 'action': path('ex07_index'), 'method': 'POST' }) }}
+    {{ form_widget(form) }}
+    <button type="submit">Insérer</button>
+{{ form_end(form) }}
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Pseudo</th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Enable</th>
+            <th>Date de naissance</th>
+            <th>Adresse</th>
+            <th>Modifier</th>
+            <th>Supprimer</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.enable ? 'Oui' : 'Non' }}</td>
+                <td>{{ user.birthdate ? user.birthdate|date('Y-m-d') : '' }}</td>
+                <td>{{ user.address }}</td>
+                <td>
+                    <form method="get" action="{{ path('ex07_update', {'id': user.id}) }}" style="display:inline;">
+                        <button type="submit">Modifier</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" action="{{ path('ex07_delete', {'id': user.id}) }}" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Supprimer l\'utilisateur #{{ user.id }} ?')">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="9">Aucun utilisateur.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier l'utilisateur{% endblock %}
+
+{% block body %}
+    <h1>Modifier l'utilisateur n°{{ user.id }}</h1>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {{ form_start(form, { 'method': 'POST' }) }}
+        {{ form_widget(form) }}
+        <button type="submit">Enregistrer</button>
+        <a href="{{ path('ex07_index') }}" class="btn btn-secondary" style="margin-left: 10px;">Annuler</a>
+    {{ form_end(form) }}
+{% endblock %}# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    annotations: true
+    http_method_override: false
+    handle_all_throwables: true
+
+    # Enables session support. Note that the session will ONLY be started if you read or write from it.
+    # Remove or comment this section to explicitly disable session support.
+    session:
+        handler_id: null
+        cookie_secure: auto
+        cookie_samesite: lax
+
+    #esi: true
+    #fragments: true
+    php_errors:
+        log: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

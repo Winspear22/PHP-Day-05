@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Méthode non autorisée (405){% endblock %}
+
+{% block body %}
+    <div class="error-container">
+        <h1>Erreur 405</h1>
+        <p>Désolé, la méthode que vous utilisez n'est pas autorisée !</p>
+        <p>Vous tentez d'utiliser une route POST avec une méthode GET !</p>
+        <p>Ceci est un message d'erreur personnalisé.</p>
+        <a class="back-btn" href="{{ path('ex12_index') }}">Revenir à l'accueil</a>
+    </div>
+{% endblock %}

@@ -1,5 +1,18 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute
+ex13_index:
+  path: /ex13
+  controller: App\Controller\Ex13Controller::index
+  methods: [GET, POST]
+
+ex13_update:
+  path: /ex13/update/{id}
+  controller: App\Controller\Ex13Controller::update
+  methods: [GET, POST]
+  requirements:
+    id: '\d+'
+
+ex13_delete:
+  path: /ex13/delete/{id}
+  controller: App\Controller\Ex13Controller::delete
+  methods: [POST]
+  requirements:
+    id: '\d+'
