@@ -54,8 +54,12 @@ public function index(
                 $this->addFlash('error', $error->getMessage());
             }
         } else {
-            // Vérifie toutes les règles CEO + COO
-            $errors = $employeeValidator->validateCEO($employee);
+            // 🔹 Vérification complète des règles
+            $errors = [];
+            $errors = array_merge($errors, $employeeValidator->validateCEO($employee));
+            $errors = array_merge($errors, $employeeValidator->validateCOO($employee));
+            $errors = array_merge($errors, $employeeValidator->validateManagers($employee));
+
             if (!empty($errors)) {
                 foreach ($errors as $err) {
                     $this->addFlash('error', $err);
@@ -87,6 +91,7 @@ public function index(
     ]);
 }
 
+
 /**
  * @Route("/ex13/update/{id}", name="ex13_update", methods={"GET", "POST"})
  */
@@ -117,8 +122,12 @@ public function update(
                 $this->addFlash('error', $error->getMessage());
             }
         } else {
-            // Vérifie toutes les règles CEO + COO
-            $errors = $employeeValidator->validateCEO($employee);
+            // 🔹 Vérification complète des règles
+            $errors = [];
+            $errors = array_merge($errors, $employeeValidator->validateCEO($employee));
+            $errors = array_merge($errors, $employeeValidator->validateCOO($employee));
+            $errors = array_merge($errors, $employeeValidator->validateManagers($employee));
+
             if (!empty($errors)) {
                 foreach ($errors as $err) {
                     $this->addFlash('error', $err);
@@ -157,15 +166,21 @@ public function delete(
             return $this->redirectToRoute('ex13_index');
         }
 
-        // CEO delete rules
+        // 🔹 Règles CEO
         if (!$employeeValidator->canDeleteCEO($employee)) {
             $this->addFlash('error', 'Cannot delete the CEO while other employees exist.');
             return $this->redirectToRoute('ex13_index');
         }
 
-        // COO delete rules
+        // 🔹 Règles COO
         if (!$employeeValidator->canDeleteCOO($employee)) {
             $this->addFlash('error', 'Cannot delete the COO while they manage employees.');
+            return $this->redirectToRoute('ex13_index');
+        }
+
+        // 🔹 Règles Managers
+        if (!$employeeValidator->canDeleteManager($employee)) {
+            $this->addFlash('error', 'Cannot delete a manager who still has employees.');
             return $this->redirectToRoute('ex13_index');
         }
 
@@ -184,199 +199,237 @@ public function delete(
 
 
 
-    private function createEmployeeForm(Employee $employee): FormInterface
-    {
-        return $this->createFormBuilder($employee)
-            ->add('firstname', TextType::class, [
-                'label' => 'First Name',
-                'constraints' => [
-                    new NotBlank(['message' => 'First name is required.']),
-                    new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
-                ],
-                'attr' => ['maxlength' => 60, 'placeholder' => 'First name']
-            ])
-            ->add('lastname', TextType::class, [
-                'label' => 'Last Name',
-                'constraints' => [
-                    new NotBlank(['message' => 'Last name is required.']),
-                    new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
-                ],
-                'attr' => ['maxlength' => 60, 'placeholder' => 'Last name']
-            ])
-            ->add('email', EmailType::class, [
-                'label' => 'Email',
-                'constraints' => [
-                    new NotBlank(['message' => 'Email is required.']),
-                    new Email(['message' => 'Invalid email address.']),
-                    new Length(['max' => 100, 'maxMessage' => 'Maximum 100 characters allowed.']),
-                ],
-                'attr' => ['maxlength' => 100, 'placeholder' => 'email@example.com']
-            ])
-            ->add('birthdate', DateTimeType::class, [
-                'label' => 'Birthdate',
-                'widget' => 'single_text',
-                'constraints' => [
-                    new NotBlank(['message' => 'Birthdate is required.']),
-                    new LessThanOrEqual(['value' => 'today', 'message' => 'Error. Birthdate cannot be in the future.']),
-                ],
-            ])
-            ->add('active', CheckboxType::class, [
-                'label' => 'Active',
-                'required' => false,
-            ])
-            ->add('employed_since', DateTimeType::class, [
-                'label' => 'Employed Since',
-                'widget' => 'single_text',
-                'constraints' => [
-                    new NotBlank(['message' => 'Employment start date is required.']),
-                ],
-            ])
-            ->add('employed_until', DateTimeType::class, [
-                'label' => 'Employed Until',
-                'widget' => 'single_text',
-                'required' => false,
-            ])
-            ->add('hours', ChoiceType::class, [
-                'label' => 'Hours',
-                'choices' => [
-                    '8 hours' => HoursEnum::EIGHT,
-                    '6 hours' => HoursEnum::SIX,
-                    '4 hours' => HoursEnum::FOUR,
-                ],
-                'placeholder' => 'Select hours'
-            ])
-            ->add('salary', IntegerType::class, [
-                'label' => 'Salary',
-                'constraints' => [
-                    new NotBlank(['message' => 'Salary is required.']),
-                ],
-            ])
-            ->add('manager', EntityType::class, [
-                'class' => Employee::class,
-                'query_builder' => function (EmployeeRepository $er) use ($employee) {
-                    return $er->createQueryBuilder('e')
-                        ->where('e.id != :current')
-                        ->setParameter('current', $employee->getId() ?? 0);
-                },
-                'choice_label' => fn(Employee $e) => $e->getFirstname() . ' ' . $e->getLastname(),
-                'placeholder' => 'Select a manager',
-                'required' => false,
-            ])
-->add('position', ChoiceType::class, [
-    'label' => 'Position',
-    'choices' => [
-        'Manager' => PositionEnum::MANAGER,
-        'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
-        'QA Manager' => PositionEnum::QA_MANAGER,
-        'Dev Manager' => PositionEnum::DEV_MANAGER,
-        'CEO' => PositionEnum::CEO,
-        'COO' => PositionEnum::COO,
-        'Backend Dev' => PositionEnum::BACKEND_DEV,
-        'Frontend Dev' => PositionEnum::FRONTEND_DEV,
-        'QA Tester' => PositionEnum::QA_TESTER,
-    ],
-    'placeholder' => 'Select position',
-    // Pas de disable ici car c'est la création
-])
-            ->getForm();
-    }
 
-    private function updateEmployeeForm(Employee $employee): FormInterface
-    {
-        return $this->createFormBuilder($employee)
-            ->add('firstname', TextType::class, [
-                'label' => 'First Name',
-                'constraints' => [
-                    new NotBlank(['message' => 'First name is required.']),
-                    new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
-                ],
-                'attr' => ['maxlength' => 60, 'placeholder' => 'First name']
-            ])
-            ->add('lastname', TextType::class, [
-                'label' => 'Last Name',
-                'constraints' => [
-                    new NotBlank(['message' => 'Last name is required.']),
-                    new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
-                ],
-                'attr' => ['maxlength' => 60, 'placeholder' => 'Last name']
-            ])
-            ->add('email', EmailType::class, [
-                'label' => 'Email',
-                'constraints' => [
-                    new NotBlank(['message' => 'Email is required.']),
-                    new Email(['message' => 'Invalid email address.']),
-                    new Length(['max' => 100, 'maxMessage' => 'Maximum 100 characters allowed.']),
-                ],
-                'attr' => ['maxlength' => 100, 'placeholder' => 'email@example.com']
-            ])
-            ->add('birthdate', DateTimeType::class, [
-                'label' => 'Birthdate',
-                'widget' => 'single_text',
-                'constraints' => [
-                    new NotBlank(['message' => 'Birthdate is required.']),
-                    new LessThanOrEqual(['value' => 'today', 'message' => 'Error. Birthdate cannot be in the future.']),
-                ],
-            ])
-            ->add('active', CheckboxType::class, [
-                'label' => 'Active',
-                'required' => false,
-            ])
-            ->add('employed_since', DateTimeType::class, [
-                'label' => 'Employed Since',
-                'widget' => 'single_text',
-                'constraints' => [
-                    new NotBlank(['message' => 'Employment start date is required.']),
-                ],
-            ])
-            ->add('employed_until', DateTimeType::class, [
-                'label' => 'Employed Until',
-                'widget' => 'single_text',
-                'required' => false,
-            ])
-            ->add('hours', ChoiceType::class, [
-                'label' => 'Hours',
-                'choices' => [
-                    '8 hours' => HoursEnum::EIGHT,
-                    '6 hours' => HoursEnum::SIX,
-                    '4 hours' => HoursEnum::FOUR,
-                ],
-                'placeholder' => 'Select hours'
-            ])
-            ->add('salary', IntegerType::class, [
-                'label' => 'Salary',
-                'constraints' => [
-                    new NotBlank(['message' => 'Salary is required.']),
-                ],
-            ])
-            ->add('manager', EntityType::class, [
-                'class' => Employee::class,
-                'query_builder' => function (EmployeeRepository $er) use ($employee) {
-                    return $er->createQueryBuilder('e')
-                        ->where('e.id != :current')
-                        ->setParameter('current', $employee->getId() ?? 0);
-                },
-                'choice_label' => fn(Employee $e) => $e->getFirstname() . ' ' . $e->getLastname(),
-                'placeholder' => 'Select a manager',
-                'required' => false,
-                'disabled' => in_array($employee->getPosition(), [PositionEnum::CEO, PositionEnum::COO]) // 🔹 Désactiver si CEO ou COO
-            ])
-->add('position', ChoiceType::class, [
-    'label' => 'Position',
-    'choices' => [
-        'Manager' => PositionEnum::MANAGER,
-        'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
-        'QA Manager' => PositionEnum::QA_MANAGER,
-        'Dev Manager' => PositionEnum::DEV_MANAGER,
-        'CEO' => PositionEnum::CEO,
-        'COO' => PositionEnum::COO,
-        'Backend Dev' => PositionEnum::BACKEND_DEV,
-        'Frontend Dev' => PositionEnum::FRONTEND_DEV,
-        'QA Tester' => PositionEnum::QA_TESTER,
-    ],
-    'placeholder' => 'Select position',
-    'disabled' => ($employee->getId() && in_array($employee->getPosition(), [PositionEnum::CEO, PositionEnum::COO])) // 🔹 Désactiver si CEO ou COO déjà créé
-])
-            ->getForm();
-    }
+private function createEmployeeForm(Employee $employee): FormInterface
+{
+    return $this->createFormBuilder($employee)
+        ->add('firstname', TextType::class, [
+            'label' => 'First Name',
+            'constraints' => [
+                new NotBlank(['message' => 'First name is required.']),
+                new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
+            ],
+            'attr' => ['maxlength' => 60, 'placeholder' => 'First name']
+        ])
+        ->add('lastname', TextType::class, [
+            'label' => 'Last Name',
+            'constraints' => [
+                new NotBlank(['message' => 'Last name is required.']),
+                new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
+            ],
+            'attr' => ['maxlength' => 60, 'placeholder' => 'Last name']
+        ])
+        ->add('email', EmailType::class, [
+            'label' => 'Email',
+            'constraints' => [
+                new NotBlank(['message' => 'Email is required.']),
+                new Email(['message' => 'Invalid email address.']),
+                new Length(['max' => 100, 'maxMessage' => 'Maximum 100 characters allowed.']),
+            ],
+            'attr' => ['maxlength' => 100, 'placeholder' => 'email@example.com']
+        ])
+        ->add('birthdate', DateTimeType::class, [
+            'label' => 'Birthdate',
+            'widget' => 'single_text',
+            'constraints' => [
+                new NotBlank(['message' => 'Birthdate is required.']),
+                new LessThanOrEqual(['value' => 'today', 'message' => 'Error. Birthdate cannot be in the future.']),
+            ],
+        ])
+        ->add('active', CheckboxType::class, [
+            'label' => 'Active',
+            'required' => false,
+        ])
+        ->add('employed_since', DateTimeType::class, [
+            'label' => 'Employed Since',
+            'widget' => 'single_text',
+            'constraints' => [
+                new NotBlank(['message' => 'Employment start date is required.']),
+            ],
+        ])
+        ->add('employed_until', DateTimeType::class, [
+            'label' => 'Employed Until',
+            'widget' => 'single_text',
+            'required' => false,
+        ])
+        ->add('hours', ChoiceType::class, [
+            'label' => 'Hours',
+            'choices' => [
+                '8 hours' => HoursEnum::EIGHT,
+                '6 hours' => HoursEnum::SIX,
+                '4 hours' => HoursEnum::FOUR,
+            ],
+            'placeholder' => 'Select hours'
+        ])
+        ->add('salary', IntegerType::class, [
+            'label' => 'Salary',
+            'constraints' => [
+                new NotBlank(['message' => 'Salary is required.']),
+            ],
+        ])
+        ->add('manager', EntityType::class, [
+            'class' => Employee::class,
+            'query_builder' => function (EmployeeRepository $er) use ($employee) {
+                $qb = $er->createQueryBuilder('e');
+
+                // 🔹 On exclut la personne elle-même
+                $qb->where('e.id != :current')
+                ->setParameter('current', $employee->getId() ?? 0);
+
+                // 🔹 Cas spéciaux pour filtrer selon le rôle
+                if ($employee->getPosition() === PositionEnum::COO) {
+                    // COO => uniquement CEO
+                    $qb->andWhere('e.position = :posCEO')
+                    ->setParameter('posCEO', PositionEnum::CEO);
+                } elseif (in_array($employee->getPosition(), [
+                    PositionEnum::MANAGER,
+                    PositionEnum::ACCOUNT_MANAGER,
+                    PositionEnum::QA_MANAGER,
+                    PositionEnum::DEV_MANAGER
+                ])) {
+                    // Managers => uniquement COO
+                    $qb->andWhere('e.position = :posCOO')
+                    ->setParameter('posCOO', PositionEnum::COO);
+                }
+
+                return $qb;
+            },
+            'choice_label' => fn(Employee $e) => $e->getFirstname() . ' ' . $e->getLastname(),
+            'placeholder' => 'Select a manager',
+            'required' => false,
+            'disabled' => in_array($employee->getPosition(), [PositionEnum::CEO, PositionEnum::COO])
+        ])
+        ->add('position', ChoiceType::class, [
+            'label' => 'Position',
+            'choices' => [
+                'Manager' => PositionEnum::MANAGER,
+                'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
+                'QA Manager' => PositionEnum::QA_MANAGER,
+                'Dev Manager' => PositionEnum::DEV_MANAGER,
+                'CEO' => PositionEnum::CEO,
+                'COO' => PositionEnum::COO,
+                'Backend Dev' => PositionEnum::BACKEND_DEV,
+                'Frontend Dev' => PositionEnum::FRONTEND_DEV,
+                'QA Tester' => PositionEnum::QA_TESTER,
+            ],
+            'placeholder' => 'Select position'
+        ])
+        ->getForm();
+}
+
+
+   private function updateEmployeeForm(Employee $employee): FormInterface
+{
+    return $this->createFormBuilder($employee)
+        ->add('firstname', TextType::class, [
+            'label' => 'First Name',
+            'constraints' => [
+                new NotBlank(['message' => 'First name is required.']),
+                new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
+            ],
+            'attr' => ['maxlength' => 60, 'placeholder' => 'First name']
+        ])
+        ->add('lastname', TextType::class, [
+            'label' => 'Last Name',
+            'constraints' => [
+                new NotBlank(['message' => 'Last name is required.']),
+                new Length(['max' => 60, 'maxMessage' => 'Maximum 60 characters allowed.']),
+            ],
+            'attr' => ['maxlength' => 60, 'placeholder' => 'Last name']
+        ])
+        ->add('email', EmailType::class, [
+            'label' => 'Email',
+            'constraints' => [
+                new NotBlank(['message' => 'Email is required.']),
+                new Email(['message' => 'Invalid email address.']),
+                new Length(['max' => 100, 'maxMessage' => 'Maximum 100 characters allowed.']),
+            ],
+            'attr' => ['maxlength' => 100, 'placeholder' => 'email@example.com']
+        ])
+        ->add('birthdate', DateTimeType::class, [
+            'label' => 'Birthdate',
+            'widget' => 'single_text',
+            'constraints' => [
+                new NotBlank(['message' => 'Birthdate is required.']),
+                new LessThanOrEqual(['value' => 'today', 'message' => 'Error. Birthdate cannot be in the future.']),
+            ],
+        ])
+        ->add('active', CheckboxType::class, [
+            'label' => 'Active',
+            'required' => false,
+        ])
+        ->add('employed_since', DateTimeType::class, [
+            'label' => 'Employed Since',
+            'widget' => 'single_text',
+            'constraints' => [
+                new NotBlank(['message' => 'Employment start date is required.']),
+            ],
+        ])
+        ->add('employed_until', DateTimeType::class, [
+            'label' => 'Employed Until',
+            'widget' => 'single_text',
+            'required' => false,
+        ])
+        ->add('hours', ChoiceType::class, [
+            'label' => 'Hours',
+            'choices' => [
+                '8 hours' => HoursEnum::EIGHT,
+                '6 hours' => HoursEnum::SIX,
+                '4 hours' => HoursEnum::FOUR,
+            ],
+            'placeholder' => 'Select hours'
+        ])
+        ->add('salary', IntegerType::class, [
+            'label' => 'Salary',
+            'constraints' => [
+                new NotBlank(['message' => 'Salary is required.']),
+            ],
+        ])
+        ->add('manager', EntityType::class, [
+            'class' => Employee::class,
+            'query_builder' => function (EmployeeRepository $er) use ($employee) {
+                $qb = $er->createQueryBuilder('e');
+                $qb->where('e.id != :current')
+                   ->setParameter('current', $employee->getId() ?? 0);
+
+                if ($employee->getPosition() === PositionEnum::COO) {
+                    $qb->andWhere('e.position = :posCEO')
+                       ->setParameter('posCEO', PositionEnum::CEO);
+                } elseif (in_array($employee->getPosition(), [
+                    PositionEnum::MANAGER,
+                    PositionEnum::ACCOUNT_MANAGER,
+                    PositionEnum::QA_MANAGER,
+                    PositionEnum::DEV_MANAGER
+                ])) {
+                    $qb->andWhere('e.position = :posCOO')
+                       ->setParameter('posCOO', PositionEnum::COO);
+                }
+
+                return $qb;
+            },
+            'choice_label' => fn(Employee $e) => $e->getFirstname() . ' ' . $e->getLastname(),
+            'placeholder' => 'Select a manager',
+            'required' => false,
+            'disabled' => in_array($employee->getPosition(), [PositionEnum::CEO, PositionEnum::COO])
+        ])
+        ->add('position', ChoiceType::class, [
+            'label' => 'Position',
+            'choices' => [
+                'Manager' => PositionEnum::MANAGER,
+                'Account Manager' => PositionEnum::ACCOUNT_MANAGER,
+                'QA Manager' => PositionEnum::QA_MANAGER,
+                'Dev Manager' => PositionEnum::DEV_MANAGER,
+                'CEO' => PositionEnum::CEO,
+                'COO' => PositionEnum::COO,
+                'Backend Dev' => PositionEnum::BACKEND_DEV,
+                'Frontend Dev' => PositionEnum::FRONTEND_DEV,
+                'QA Tester' => PositionEnum::QA_TESTER,
+            ],
+            'placeholder' => 'Select position',
+            'disabled' => ($employee->getId() && in_array($employee->getPosition(), [PositionEnum::CEO, PositionEnum::COO]))
+        ])
+        ->getForm();
+}
+
 
 }
