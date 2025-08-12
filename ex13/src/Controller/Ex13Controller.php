@@ -12,14 +12,15 @@ use App\Repository\EmployeeRepository;
 use App\Service\EmployeeDeleteService;
 use App\Service\EmployeeInsertService;
 use App\Service\EmployeeUpdateService;
+use App\Service\EmployeeValidatorService;
 use Symfony\Component\Form\FormInterface;
-use Symfony\Component\Form\ClearableErrorsInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Form\ClearableErrorsInterface;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -40,7 +41,8 @@ final class Ex13Controller extends AbstractController
 public function index(
     Request $request,
     EmployeeReadService $employeeReadService,
-    EmployeeInsertService $employeeInsertService
+    EmployeeInsertService $employeeInsertService,
+    EmployeeValidatorService $employeeValidator
 ): Response {
     $employee = new Employee();
     $form = $this->createEmployeeForm($employee);
@@ -52,20 +54,30 @@ public function index(
                 $this->addFlash('error', $error->getMessage());
             }
         } else {
-            try {
-                $employeeInsertService->insertEmployee($employee);
-                $this->addFlash('success', 'Employé créé avec succès.');
-                return $this->redirectToRoute('ex13_index');
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Erreur lors de la création : ' . $e->getMessage());
+            // CEO rules check
+            $errors = $employeeValidator->validateCEO($employee);
+            if (!empty($errors)) {
+                foreach ($errors as $err) {
+                    $this->addFlash('error', $err);
+                }
+            } else {
+                try {
+                    $employeeInsertService->insertEmployee($employee);
+                    $this->addFlash('success', 'Employee created successfully.');
+                    return $this->redirectToRoute('ex13_index');
+                } catch (UniqueConstraintViolationException $e) {
+                    $this->addFlash('error', 'Email address is already in use.');
+                } catch (Throwable $e) {
+                    $this->addFlash('error', 'Error while creating employee: ' . $e->getMessage());
+                }
             }
         }
     }
 
     try {
         $employees = $employeeReadService->getAllEmployees();
-    } catch (\Throwable $e) {
-        $this->addFlash('error', "Erreur lors de la récupération des employés : " . $e->getMessage());
+    } catch (Throwable $e) {
+        $this->addFlash('error', "Error while retrieving employees: " . $e->getMessage());
         $employees = [];
     }
 
@@ -82,16 +94,17 @@ public function update(
     int $id,
     Request $request,
     EmployeeReadService $employeeReadService,
-    EmployeeUpdateService $employeeUpdateService
+    EmployeeUpdateService $employeeUpdateService,
+    EmployeeValidatorService $employeeValidator
 ): Response {
     try {
         $employee = $employeeReadService->getEmployeeById($id);
         if (!$employee) {
-            $this->addFlash('error', "Employé introuvable.");
+            $this->addFlash('error', "Employee not found.");
             return $this->redirectToRoute('ex13_index');
         }
-    } catch (\Throwable $e) {
-        $this->addFlash('error', "Erreur lors de la récupération : " . $e->getMessage());
+    } catch (Throwable $e) {
+        $this->addFlash('error', "Error while retrieving employee: " . $e->getMessage());
         return $this->redirectToRoute('ex13_index');
     }
 
@@ -104,12 +117,20 @@ public function update(
                 $this->addFlash('error', $error->getMessage());
             }
         } else {
-            try {
-                $employeeUpdateService->updateEmployee($employee);
-                $this->addFlash('success', 'Employé mis à jour avec succès.');
-                return $this->redirectToRoute('ex13_index');
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
+            // CEO rules check
+            $errors = $employeeValidator->validateCEO($employee);
+            if (!empty($errors)) {
+                foreach ($errors as $err) {
+                    $this->addFlash('error', $err);
+                }
+            } else {
+                try {
+                    $employeeUpdateService->updateEmployee($employee);
+                    $this->addFlash('success', 'Employee updated successfully.');
+                    return $this->redirectToRoute('ex13_index');
+                } catch (Throwable $e) {
+                    $this->addFlash('error', 'Error while updating employee: ' . $e->getMessage());
+                }
             }
         }
     }
@@ -120,28 +141,41 @@ public function update(
     ]);
 }
 
-
-
-    /**
-     * @Route("/ex13/delete/{id}", name="ex13_delete", methods={"POST"})
-     */
-    public function delete(int $id, EmployeeDeleteService $deleteService): Response
-    {
-        try
-        {
-            $success = $deleteService->deleteEmployeeById($id);
-            if ($success)
-                $this->addFlash('success', "Success! Employee was successfully deleted !");
-            else
-                $this->addFlash('danger', "Error, we could not find the employee requested !");
+/**
+ * @Route("/ex13/delete/{id}", name="ex13_delete", methods={"POST"})
+ */
+public function delete(
+    int $id,
+    EmployeeDeleteService $deleteService,
+    EmployeeReadService $employeeReadService,
+    EmployeeValidatorService $employeeValidator
+): Response {
+    try {
+        $employee = $employeeReadService->getEmployeeById($id);
+        if (!$employee) {
+            $this->addFlash('error', "Employee not found.");
             return $this->redirectToRoute('ex13_index');
         }
-        catch (Throwable $e)
-        {
-            $this->addFlash('danger', 'Error, unexpected error: ' . $e->getMessage());
+
+        // CEO delete rules
+        if (!$employeeValidator->canDeleteCEO($employee)) {
+            $this->addFlash('error', 'Cannot delete the CEO while other employees exist.');
             return $this->redirectToRoute('ex13_index');
         }
+
+        $success = $deleteService->deleteEmployeeById($id);
+        if ($success) {
+            $this->addFlash('success', "Employee deleted successfully.");
+        } else {
+            $this->addFlash('error', "Error: employee not found.");
+        }
+    } catch (Throwable $e) {
+        $this->addFlash('error', 'Unexpected error: ' . $e->getMessage());
     }
+
+    return $this->redirectToRoute('ex13_index');
+}
+
 
     private function createEmployeeForm(Employee $employee): FormInterface
     {
