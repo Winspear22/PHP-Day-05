@@ -52,6 +52,44 @@ class EmployeeValidatorService
             }
         }
 
+        // ========================
+        //       COO RULES
+        // ========================
+
+        // 1. Le deuxième employé doit être COO
+        if ($employee->getId() === null && $this->employeeRepository->count([]) === 1) {
+            if ($employee->getPosition() !== PositionEnum::COO) {
+                $errors[] = 'The second employee must be the COO.';
+                $this->addViolation($context, 'position', end($errors));
+            }
+        }
+
+        // 2. Un seul COO dans l’entreprise
+        if ($employee->getPosition() === PositionEnum::COO) {
+            $existingCOO = $this->employeeRepository->findOneBy(['position' => PositionEnum::COO]);
+            if ($existingCOO && $existingCOO->getId() !== $employee->getId()) {
+                $errors[] = 'There can only be one COO in the company.';
+                $this->addViolation($context, 'position', end($errors));
+            }
+        }
+
+        // 3. Bloquer le changement de rôle si c'est l'actuel COO
+        $currentCOO = $this->employeeRepository->findOneBy(['position' => PositionEnum::COO]);
+        if ($currentCOO && $currentCOO->getId() === $employee->getId()) {
+            if ($employee->getPosition() !== PositionEnum::COO) {
+                $errors[] = 'The COO position cannot be changed.';
+                $this->addViolation($context, 'position', end($errors));
+            }
+        }
+
+        // 4. Le COO doit avoir le CEO comme manager
+        if ($employee->getPosition() === PositionEnum::COO) {
+            if (!$employee->getManager() || $employee->getManager()->getPosition() !== PositionEnum::CEO) {
+                $errors[] = 'The COO must have the CEO as manager.';
+                $this->addViolation($context, 'manager', end($errors));
+            }
+        }
+
         return $errors;
     }
 
@@ -68,6 +106,20 @@ class EmployeeValidatorService
         }
 
         return true; // Pas le CEO, suppression autorisée
+    }
+
+    /**
+     * Vérifie si le COO peut être supprimé.
+     */
+    public function canDeleteCOO(Employee $employee): bool
+    {
+        if ($employee->getPosition() !== PositionEnum::COO) {
+            return true;
+        }
+
+        // On vérifie s'il manage quelqu'un
+        $managedEmployees = $this->employeeRepository->findBy(['manager' => $employee]);
+        return count($managedEmployees) === 0; // Impossible de supprimer si le COO manage des employés
     }
 
     private function addViolation(?ExecutionContextInterface $context, string $field, string $message): void

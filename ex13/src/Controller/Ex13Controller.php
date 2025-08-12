@@ -54,7 +54,7 @@ public function index(
                 $this->addFlash('error', $error->getMessage());
             }
         } else {
-            // CEO rules check
+            // Vérifie toutes les règles CEO + COO
             $errors = $employeeValidator->validateCEO($employee);
             if (!empty($errors)) {
                 foreach ($errors as $err) {
@@ -117,7 +117,7 @@ public function update(
                 $this->addFlash('error', $error->getMessage());
             }
         } else {
-            // CEO rules check
+            // Vérifie toutes les règles CEO + COO
             $errors = $employeeValidator->validateCEO($employee);
             if (!empty($errors)) {
                 foreach ($errors as $err) {
@@ -163,6 +163,12 @@ public function delete(
             return $this->redirectToRoute('ex13_index');
         }
 
+        // COO delete rules
+        if (!$employeeValidator->canDeleteCOO($employee)) {
+            $this->addFlash('error', 'Cannot delete the COO while they manage employees.');
+            return $this->redirectToRoute('ex13_index');
+        }
+
         $success = $deleteService->deleteEmployeeById($id);
         if ($success) {
             $this->addFlash('success', "Employee deleted successfully.");
@@ -175,6 +181,7 @@ public function delete(
 
     return $this->redirectToRoute('ex13_index');
 }
+
 
 
     private function createEmployeeForm(Employee $employee): FormInterface
@@ -351,6 +358,7 @@ public function delete(
                 'choice_label' => fn(Employee $e) => $e->getFirstname() . ' ' . $e->getLastname(),
                 'placeholder' => 'Select a manager',
                 'required' => false,
+                'disabled' => ($employee->getPosition() === PositionEnum::CEO) 
             ])
 ->add('position', ChoiceType::class, [
     'label' => 'Position',
